@@ -1,0 +1,38 @@
+# CivicAccess User Manual
+
+## For Residents And Municipal Decision-Makers
+
+CivicAccess helps cities make public information easier to read, reach, translate, and preserve. It supports accessibility review, plain-language rewrites, multilingual variants, and records-ready export checklists.
+
+Current state: `0.1.0` accessibility foundation release. The module includes deterministic sample checks and a public sample UI at `/civicaccess`. It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, production document ingestion, or final publication approval.
+
+## For IT And Technical Staff
+
+CivicAccess is a FastAPI Python package pinned to `civiccore==0.2.0`. The current runtime exposes:
+
+- `GET /`
+- `GET /health`
+- `GET /civicaccess`
+- `POST /api/v1/civicaccess/review`
+- `POST /api/v1/civicaccess/plain-language`
+- `POST /api/v1/civicaccess/language-variant`
+- `POST /api/v1/civicaccess/export`
+
+Run local verification with:
+
+```powershell
+python -m pip install -e ".[dev]"
+python -m pytest -q
+bash scripts/verify-release.sh
+```
+
+## Architecture
+
+```mermaid
+flowchart LR
+  PublicUser["Resident or staff publisher"] --> CivicAccess["CivicAccess"]
+  CivicAccess --> CivicCore["CivicCore v0.2.0"]
+  CivicAccess -. future .-> Modules["CivicClerk / CivicCode / CivicZone"]
+```
+
+CivicAccess depends on CivicCore. CivicCore does not depend on CivicAccess.
