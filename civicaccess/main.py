@@ -53,7 +53,7 @@ def root() -> dict[str, str]:
             "CivicAccess package, API foundation, sample accessibility review, plain-language rewrite, multilingual variant, records-ready export checklist, and public UI foundation are online; "
             "certified ADA review, live LLM calls, production translation workflows, and document-ingestion integrations are not implemented yet."
         ),
-        "next_step": "Post-v0.1.0 roadmap: certified review workflows, document ingestion, and suite-wide accessibility APIs",
+        "next_step": "Post-v0.1.1 roadmap: certified review workflows, document ingestion, and suite-wide accessibility APIs",
     }
 
 

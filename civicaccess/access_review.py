@@ -1,4 +1,4 @@
-"""Deterministic accessibility review helpers for CivicAccess v0.1.0."""
+"""Deterministic accessibility review helpers for CivicAccess v0.1.1."""
 
 from __future__ import annotations
 
