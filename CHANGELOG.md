@@ -4,6 +4,12 @@ All notable changes to CivicAccess will be documented in this file.
 
 The format follows Keep a Changelog, and this project follows Semantic Versioning.
 
+## [Unreleased]
+
+### Added
+
+- Production-depth accessibility review persistence slice with `CIVICACCESS_REVIEW_DB_URL`, persisted review requests/findings, and retrieval by `review_id`.
+
 ## [0.1.1] - 2026-04-28
 
 ### Changed

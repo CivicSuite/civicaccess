@@ -18,7 +18,8 @@ def test_root_endpoint_states_runtime_boundary() -> None:
 
     assert payload["name"] == "CivicAccess"
     assert payload["version"] == "0.1.1"
-    assert payload["status"] == "accessibility foundation"
+    assert payload["status"] == "accessibility foundation plus review persistence"
+    assert "database-backed review records" in payload["message"]
     assert "not implemented yet" in payload["message"]
     assert payload["next_step"].startswith("Post-v0.1.1 roadmap")
 
@@ -32,4 +33,3 @@ def test_health_endpoint_reports_versions() -> None:
     assert payload["service"] == "civicaccess"
     assert payload["version"] == "0.1.1"
     assert payload["civiccore_version"] == "0.3.0"
-

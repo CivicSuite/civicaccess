@@ -2,7 +2,7 @@
 
 CivicAccess is the CivicSuite module for accessibility, plain-language, multilingual, and ADA review support.
 
-Current state: **v0.1.1 accessibility foundation release**. This repo ships a FastAPI package, health/root endpoints, documentation gates, deterministic sample accessibility review, plain-language rewrite, multilingual variant, records-ready export checklist, accessible public sample UI at `/civicaccess`, and `civiccore==0.3.0` dependency alignment. It does **not** ship certified ADA compliance, legal advice, live LLM calls, production translation workflows, document ingestion, or suite-wide integration APIs.
+Current state: **v0.1.1 accessibility foundation release plus production-depth review persistence slice**. This repo ships a FastAPI package, health/root endpoints, documentation gates, deterministic sample accessibility review, optional database-backed review records via `CIVICACCESS_REVIEW_DB_URL`, plain-language rewrite, multilingual variant, records-ready export checklist, accessible public sample UI at `/civicaccess`, and `civiccore==0.3.0` dependency alignment. It does **not** ship certified ADA compliance, legal advice, live LLM calls, production translation workflows, document ingestion, or suite-wide integration APIs.
 
 ## What CivicAccess Does
 
@@ -28,9 +28,12 @@ bash scripts/verify-release.sh
 - `GET /health` returns package and CivicCore version information.
 - `GET /civicaccess` returns the accessible public sample UI.
 - `POST /api/v1/civicaccess/review` returns sample accessibility findings.
+- `GET /api/v1/civicaccess/reviews/{review_id}` retrieves persisted review records when `CIVICACCESS_REVIEW_DB_URL` is configured.
 - `POST /api/v1/civicaccess/plain-language` returns a deterministic sample rewrite.
 - `POST /api/v1/civicaccess/language-variant` returns a sample multilingual variant requiring human review.
 - `POST /api/v1/civicaccess/export` returns a records-ready accessibility export checklist.
+
+Set `CIVICACCESS_REVIEW_DB_URL` to enable persistent accessibility review records. When unset, CivicAccess continues to use deterministic in-memory review behavior for local examples.
 
 ## License
 
