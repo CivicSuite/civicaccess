@@ -6,6 +6,15 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-21
+
+### Corrected
+
+- Corrected the false `v1.0.0` release label after the independent CivicSuite release-integrity audit found CivicAccess does not meet the Section 2 FINISHED and SHIPPING bar.
+- Set the honest current label to `v0.2.0` and superseded the mistaken `v1.0.0` posture without deleting the historical record.
+- Current classification: scaffold - deterministic accessibility/plain-language support exists, but real AI, real municipal data/search, production-grade frontend, and public-use gate proof remain absent.
+- CivicAccess must not be described as finished, shipping, city-ready, product-ready, or public-use ready until a future independent audit signs off against the full Section 2 gate.
+
 ## [1.0.0] - 2026-05-21
 
 ### Added

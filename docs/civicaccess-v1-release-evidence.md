@@ -1,10 +1,10 @@
-# CivicAccess v1.0.0 Release Evidence
+# CivicAccess v1.0.0 False Release Evidence
 
 Date: 2026-05-21
 
 ## Scope
 
-CivicAccess v1.0.0 implements the CivicSuite unified spec scope for the module:
+This file is historical evidence for the mistaken 2026-05-21 v1.0.0 release. CivicAccess is now demoted to v0.2.0; do not use this file as proof that CivicAccess is finished, shipping, city-ready, product-ready, or public-use ready.
 
 - Accessible forms.
 - Accessible publishing workflow.
