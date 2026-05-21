@@ -1,3 +1,6 @@
 2026-05-21T00:00:00Z | START | CivicAccess v1.0.0 module-release run created under agent-pipeline-codex v0.9.0 pattern.
 2026-05-21T00:00:00Z | ACTIVE_LOCK | CivicAccess only. Queued modules read-only.
 2026-05-21T00:00:00Z | PREFLIGHT | Existing release gate fails because CivicCore runtime reports 1.1.0 while tests/docs pin 0.3.0.
+2026-05-21T11:08:00Z | SOURCE_PR | PR #6 opened for CivicAccess v1.0.0 source release.
+2026-05-21T11:20:00Z | AUDIT_FIX | Release-gate audit found visible public QA controls; controls removed and browser QA refreshed.
+2026-05-21T11:24:00Z | VERIFY | Local verify-release passed; PR #6 CI green on head 9842d42.
