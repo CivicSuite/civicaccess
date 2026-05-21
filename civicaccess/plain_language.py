@@ -1,4 +1,4 @@
-"""Plain-language rewrite helpers for CivicAccess v0.1.1."""
+"""Plain-language rewrite helpers for CivicAccess v1.0.0."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ class PlainLanguageRewrite:
     rewritten: str
     reading_level: str
     review_required: bool
+    provenance: tuple[str, ...]
     disclaimer: str = DISCLAIMER
 
 
@@ -39,4 +40,9 @@ def rewrite_plain_language(text: str) -> PlainLanguageRewrite:
         rewritten=rewritten,
         reading_level="sample plain-language pass; not a certified reading-level score",
         review_required=True,
+        provenance=(
+            "source_text_preserved",
+            "deterministic_jargon_map_applied",
+            "human_review_required_before_publication",
+        ),
     )

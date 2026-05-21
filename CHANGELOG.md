@@ -6,11 +6,25 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-21
+
+### Added
+
+- Public-use CivicAccess support release covering accessible forms, accessible publishing workflow checks, WCAG-aligned review support, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready exports, and a functional `/civicaccess` UI.
+- New deterministic workflow endpoints for forms, publishing workflow, ADA Title II review support, and tagged-PDF expectations.
+- Adversarial tests for empty content, unsupported language placeholders, unsupported export formats, blocked publishing workflows, missing persisted records, unavailable persistence, and non-certification boundaries.
+- Browser QA evidence for desktop and mobile public UI states.
+
+### Changed
+
+- Aligned CivicAccess to `civiccore==1.1.0`.
+- Updated release gates, CI, documentation, and package artifacts for `1.0.0`.
+
+## [0.1.1] - 2026-04-28
+
 ### Added
 
 - Production-depth accessibility review persistence slice with `CIVICACCESS_REVIEW_DB_URL`, persisted review requests/findings, and retrieval by `review_id`.
-
-## [0.1.1] - 2026-04-28
 
 ### Changed
 

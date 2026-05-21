@@ -1,0 +1,41 @@
+{
+  "desktop": {
+    "title": "CivicAccess Public Accessibility Support",
+    "hasBadge": 1,
+    "pendingVisible": 1
+  },
+  "mobile": {
+    "hasHeading": 1,
+    "hasButton": 1
+  },
+  "console": [],
+  "focusOrder": [
+    "title -> notice -> alt text -> run review reachable by keyboard"
+  ],
+  "states": [
+    {
+      "state": "needs_fixes",
+      "visible": 1
+    },
+    {
+      "state": "empty",
+      "visible": 1
+    },
+    {
+      "state": "partial_degraded",
+      "visible": 1
+    },
+    {
+      "state": "success",
+      "visible": 1
+    },
+    {
+      "state": "error",
+      "visible": 1
+    }
+  ],
+  "publicQaControls": {
+    "showEmpty": 0,
+    "showError": 0
+  }
+}

@@ -32,6 +32,7 @@ required=(
   "civicaccess/plain_language.py"
   "civicaccess/multilingual.py"
   "civicaccess/exports.py"
+  "civicaccess/workflows.py"
   "civicaccess/public_ui.py"
 )
 

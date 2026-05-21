@@ -1,4 +1,4 @@
-"""Multilingual variant helpers for CivicAccess v0.1.1."""
+"""Multilingual variant helpers for CivicAccess v1.0.0."""
 
 from __future__ import annotations
 
@@ -12,12 +12,14 @@ class LanguageVariant:
     language: str
     text: str
     review_required: bool
+    status: str
+    fix: str
     disclaimer: str = DISCLAIMER
 
 
 SAMPLE_VARIANTS = {
-    "es": "Muestra: comunÃ­quese con la ciudad para recibir ayuda con este aviso.",
-    "vi": "Máº«u: liÃªn há»‡ vá»›i thÃ nh phá»‘ Ä‘á»ƒ Ä‘Æ°á»£c trá»£ giÃºp vá» thÃ´ng bÃ¡o nÃ y.",
+    "es": "Muestra: comuniquese con la ciudad para recibir ayuda con este aviso.",
+    "vi": "Mau: lien he voi thanh pho de duoc tro giup ve thong bao nay.",
 }
 
 
@@ -25,8 +27,18 @@ def create_language_variant(*, text: str, language: str) -> LanguageVariant:
     """Return an explicitly sample multilingual variant."""
 
     normalized = language.strip().casefold()
-    sample = SAMPLE_VARIANTS.get(
-        normalized,
-        f"Sample variant placeholder for {language}: {text.strip()}",
+    if normalized in SAMPLE_VARIANTS:
+        return LanguageVariant(
+            language=language,
+            text=SAMPLE_VARIANTS[normalized],
+            review_required=True,
+            status="sample-created",
+            fix="Route this sample to a qualified human reviewer before publication.",
+        )
+    return LanguageVariant(
+        language=language,
+        text=f"Sample variant placeholder for {language}: {text.strip()}",
+        review_required=True,
+        status="unsupported-language-placeholder",
+        fix="Add a reviewed translation workflow for this language before using it publicly.",
     )
-    return LanguageVariant(language=language, text=sample, review_required=True)
