@@ -13,6 +13,12 @@ from civicaccess.exports import build_accessible_export
 from civicaccess.multilingual import create_language_variant
 from civicaccess.plain_language import rewrite_plain_language
 from civicaccess.public_ui import render_public_lookup_page
+from civicaccess.workflows import (
+    build_accessible_form_plan,
+    build_ada_title_ii_review_plan,
+    build_publishing_workflow_plan,
+    build_tagged_pdf_expectations,
+)
 
 
 app = FastAPI(
@@ -46,6 +52,27 @@ class AccessibleExportRequest(BaseModel):
     format: str = "html"
 
 
+class AccessibleFormRequest(BaseModel):
+    form_name: str = ""
+    fields: list[str] = []
+
+
+class PublishingWorkflowRequest(BaseModel):
+    title: str = ""
+    has_review: bool = False
+    has_plain_language: bool = False
+    has_translation_review: bool = False
+
+
+class AdaTitleIiReviewRequest(BaseModel):
+    service_area: str = ""
+    has_coordinator_review: bool = False
+
+
+class TaggedPdfExpectationRequest(BaseModel):
+    heading_levels: list[int] = []
+
+
 @app.get("/")
 def root() -> dict[str, str]:
     """Return current product state without overstating unshipped behavior."""
@@ -53,12 +80,12 @@ def root() -> dict[str, str]:
     return {
         "name": "CivicAccess",
         "version": __version__,
-        "status": "accessibility foundation plus review persistence",
+        "status": "public-use accessibility support release",
         "message": (
-            "CivicAccess package, API foundation, sample accessibility review, optional database-backed review records, plain-language rewrite, multilingual variant, records-ready export checklist, and public UI foundation are online; "
-            "certified ADA review, live LLM calls, production translation workflows, and document-ingestion integrations are not implemented yet."
+            "CivicAccess provides deterministic accessible-form planning, publishing workflow checks, WCAG-aligned review support, optional database-backed review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and a public UI. "
+            "It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval."
         ),
-        "next_step": "Post-v0.1.1 roadmap: certified review workflows, document ingestion, and suite-wide accessibility APIs",
+        "next_step": "Operate CivicAccess through the documented API and staff-reviewed publication workflow.",
     }
 
 
@@ -102,6 +129,7 @@ def accessibility_review(request: AccessibilityReviewRequest) -> dict[str, objec
         "status": result.status,
         "findings": [finding.__dict__ for finding in result.findings],
         "disclaimer": result.disclaimer,
+        "next_steps": list(result.next_steps),
         "review_id": None,
     }
 
@@ -140,10 +168,72 @@ def language_variant(request: LanguageVariantRequest) -> dict[str, object]:
     return result.__dict__
 
 
+@app.post("/api/v1/civicaccess/forms")
+def accessible_form(request: AccessibleFormRequest) -> dict[str, object]:
+    result = build_accessible_form_plan(form_name=request.form_name, fields=tuple(request.fields))
+    return {
+        "status": result.status,
+        "missing_fields": list(result.missing_fields),
+        "checklist": list(result.checklist),
+        "fix": result.fix,
+        "disclaimer": result.disclaimer,
+    }
+
+
+@app.post("/api/v1/civicaccess/publishing-workflow")
+def publishing_workflow(request: PublishingWorkflowRequest) -> dict[str, object]:
+    result = build_publishing_workflow_plan(
+        title=request.title,
+        has_review=request.has_review,
+        has_plain_language=request.has_plain_language,
+        has_translation_review=request.has_translation_review,
+    )
+    return {
+        "status": result.status,
+        "steps": list(result.steps),
+        "blockers": list(result.blockers),
+        "fix": result.fix,
+        "disclaimer": result.disclaimer,
+    }
+
+
+@app.post("/api/v1/civicaccess/ada-title-ii")
+def ada_title_ii_review(request: AdaTitleIiReviewRequest) -> dict[str, object]:
+    result = build_ada_title_ii_review_plan(
+        service_area=request.service_area,
+        has_coordinator_review=request.has_coordinator_review,
+    )
+    return {
+        "status": result.status,
+        "checklist": list(result.checklist),
+        "reviewer_required": result.reviewer_required,
+        "fix": result.fix,
+        "disclaimer": result.disclaimer,
+    }
+
+
+@app.post("/api/v1/civicaccess/tagged-pdf")
+def tagged_pdf_expectations(request: TaggedPdfExpectationRequest) -> dict[str, object]:
+    result = build_tagged_pdf_expectations(heading_levels=tuple(request.heading_levels))
+    return {
+        "status": result.status,
+        "checklist": list(result.checklist),
+        "fix": result.fix,
+        "disclaimer": result.disclaimer,
+    }
+
+
 @app.post("/api/v1/civicaccess/export")
 def accessible_export(request: AccessibleExportRequest) -> dict[str, object]:
     result = build_accessible_export(title=request.title, format=request.format)
-    return {"title": result.title, "format": result.format, "checklist": list(result.checklist), "retention_note": result.retention_note}
+    return {
+        "title": result.title,
+        "format": result.format,
+        "checklist": list(result.checklist),
+        "retention_note": result.retention_note,
+        "status": result.status,
+        "fix": result.fix,
+    }
 
 
 def _review_database_url() -> str | None:
@@ -175,6 +265,11 @@ def _stored_review_response(stored: StoredAccessibilityReview) -> dict[str, obje
         "status": stored.status,
         "findings": [finding.__dict__ for finding in stored.findings],
         "disclaimer": stored.disclaimer,
+        "next_steps": [
+            "Resolve each high-severity finding before publication.",
+            "Have staff or an ADA coordinator review the final publication decision.",
+            "Preserve the review record with the source content and publication package.",
+        ],
         "title": stored.title,
         "language": stored.language,
         "created_at": stored.created_at.isoformat(),

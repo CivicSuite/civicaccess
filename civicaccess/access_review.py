@@ -1,4 +1,4 @@
-"""Deterministic accessibility review helpers for CivicAccess v0.1.1."""
+"""Deterministic accessibility review helpers for CivicAccess v1.0.0."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ class AccessibilityReview:
     status: str
     findings: tuple[AccessibilityFinding, ...]
     disclaimer: str
+    next_steps: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -129,6 +130,16 @@ def review_accessibility(*, title: str, body: str, has_alt_text: bool, language:
     """Return deterministic sample accessibility findings without live LLM calls."""
 
     findings: list[AccessibilityFinding] = []
+    if not body.strip():
+        findings.append(
+            AccessibilityFinding(
+                code="missing-body",
+                severity="high",
+                message="The public text is empty.",
+                fix="Add the resident-facing text before running an accessibility review.",
+                wcag_reference="WCAG 3.1.5 Reading Level",
+            )
+        )
     if not title.strip():
         findings.append(
             AccessibilityFinding(
@@ -174,6 +185,11 @@ def review_accessibility(*, title: str, body: str, has_alt_text: bool, language:
         status="needs-fixes" if findings else "passes-sample-checks",
         findings=tuple(findings),
         disclaimer=DISCLAIMER,
+        next_steps=(
+            "Resolve each high-severity finding before publication.",
+            "Have staff or an ADA coordinator review the final publication decision.",
+            "Preserve the review record with the source content and publication package.",
+        ),
     )
 
 

@@ -1,0 +1,34 @@
+{
+  "desktop": {
+    "title": "CivicAccess Public Accessibility Support",
+    "url": "http://127.0.0.1:8010/civicaccess",
+    "hasBadge": 1,
+    "pendingVisible": 1
+  },
+  "mobile": {
+    "hasHeading": 1,
+    "hasButton": 1
+  },
+  "console": [],
+  "focusOrder": [
+    "title -> notice -> alt text/run controls reachable by keyboard"
+  ],
+  "states": [
+    {
+      "state": "success_or_needs_fixes",
+      "visible": 1
+    },
+    {
+      "state": "empty",
+      "visible": 1
+    },
+    {
+      "state": "error",
+      "visible": 1
+    },
+    {
+      "state": "loading_then_partial_degraded",
+      "visible": 1
+    }
+  ]
+}

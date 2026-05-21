@@ -1,5 +1,7 @@
 # Security
 
-CivicAccess is early-stage software. Current version: `0.1.1`. Do not deploy it as a system of record until a release explicitly says it is production-ready.
+CivicAccess version: `1.0.0`.
 
-Report suspected vulnerabilities privately to the project maintainer. Do not open public issues containing exploit details, secrets, or sensitive municipal data.
+CivicAccess is self-hosted municipal software. It provides advisory accessibility, plain-language, multilingual draft, and ADA Title II review-support workflows; it does not make legal, certification, translation, or publication decisions.
+
+Report vulnerabilities privately through the CivicSuite project maintainers. Do not include secrets, resident data, or protected municipal records in public issues.

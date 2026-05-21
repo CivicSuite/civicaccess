@@ -1,0 +1,3 @@
+2026-05-21T00:00:00Z | START | CivicAccess v1.0.0 module-release run created under agent-pipeline-codex v0.9.0 pattern.
+2026-05-21T00:00:00Z | ACTIVE_LOCK | CivicAccess only. Queued modules read-only.
+2026-05-21T00:00:00Z | PREFLIGHT | Existing release gate fails because CivicCore runtime reports 1.1.0 while tests/docs pin 0.3.0.

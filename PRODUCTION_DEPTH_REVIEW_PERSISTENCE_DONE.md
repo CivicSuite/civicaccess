@@ -2,29 +2,19 @@
 
 Date: 2026-04-28
 
+Status: superseded by CivicAccess v1.0.0 on 2026-05-21.
+
 ## Scope
 
-This slice adds optional database-backed accessibility review records while preserving deterministic sample behavior when no database URL is configured.
+This historical slice added optional database-backed accessibility review records while preserving deterministic sample behavior when no database URL is configured.
 
-## Shipped
+## Shipped In That Slice
 
 - `CIVICACCESS_REVIEW_DB_URL` enables persistent accessibility review records.
 - `AccessibilityReviewRepository` stores review requests, findings, WCAG references, disclaimers, and timestamps.
 - `POST /api/v1/civicaccess/review` returns a `review_id` when persistence is configured.
 - `GET /api/v1/civicaccess/reviews/{review_id}` retrieves persisted review records when persistence is configured.
 
-## Still Not Shipped
+## Current Boundary
 
-- Certified ADA compliance.
-- Legal advice.
-- Live LLM calls.
-- Production translation workflows.
-- Document ingestion.
-- Suite-wide integration APIs.
-
-## Verification
-
-- Repository persistence tests must pass.
-- API persistence and retrieval tests must pass.
-- Full release verification must pass before push/merge.
-- Browser QA evidence must confirm `docs/index.html` renders the updated persistence status at desktop and mobile widths with zero console errors.
+CivicAccess v1.0.0 now includes the broader public-use support surface. CivicAccess still does not provide certified ADA compliance, legal advice, official translation certification, live LLM calls, or final publication approval.

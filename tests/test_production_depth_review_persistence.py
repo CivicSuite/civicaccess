@@ -53,6 +53,22 @@ def test_api_persists_and_retrieves_review_records(monkeypatch, tmp_path) -> Non
     assert get_response.status_code == 200
     assert get_response.json()["review_id"] == review_id
     assert get_response.json()["findings"][0]["code"] == "missing-title"
+    assert get_response.json()["next_steps"]
+    db_path.unlink()
+
+
+def test_review_record_lookup_reports_missing_record(monkeypatch, tmp_path) -> None:
+    db_path = tmp_path / "missing-review.db"
+    monkeypatch.setenv("CIVICACCESS_REVIEW_DB_URL", f"sqlite:///{db_path}")
+
+    try:
+        response = client.get("/api/v1/civicaccess/reviews/00000000-0000-4000-8000-000000000000")
+    finally:
+        main_module._dispose_review_repository()
+        main_module._review_db_url = None
+
+    assert response.status_code == 404
+    assert "Use a review_id returned by POST" in response.json()["detail"]["fix"]
     db_path.unlink()
 
 
