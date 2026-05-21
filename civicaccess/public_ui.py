@@ -1,4 +1,4 @@
-"""Static public UI for CivicAccess v1.0.0."""
+"""Static public UI for CivicAccess v0.2.0."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def render_public_lookup_page() -> str:
   <p class="eyebrow">CivicSuite / CivicAccess</p>
   <h1>Make public information easier to read, reach, and preserve.</h1>
   <p class="lede">CivicAccess gives staff a deterministic review path for accessible forms, public notices, plain-language rewrites, multilingual samples, ADA Title II review support, tagged-PDF expectations, and municipal-record exports.</p>
-  <p><span class="badge">v1.0.0 public-use support release</span></p>
+  <p><span class="badge">v0.2.0 corrective demotion state</span></p>
 </header>
 <main id="main" tabindex="-1">
   <section class="grid" aria-labelledby="review-title">

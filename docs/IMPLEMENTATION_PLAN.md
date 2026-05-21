@@ -1,6 +1,6 @@
 # CivicAccess Implementation Plan
 
-CivicAccess v1.0.0 ships the public-use support surface required by the CivicSuite unified spec: accessible forms, accessible publishing workflows, WCAG review support, plain-language rewrites, multilingual draft variants, ADA Title II review support, tagged-PDF expectations, records-ready exports, persistence for review records, and a functional public UI.
+CivicAccess v0.2.0 is a corrective demotion after the mistaken v1.0.0 publication. It contains deterministic accessible forms, accessible publishing workflows, WCAG review support, plain-language rewrites, multilingual draft variants, ADA Title II review support, tagged-PDF expectations, records-ready exports, persistence for review records, and a public UI, but it is not finished, shipping, city-ready, product-ready, or public-use ready.
 
 ## Verification Bar
 

@@ -4,7 +4,7 @@
 
 CivicAccess helps cities make public information easier to read, reach, translate, review, and preserve. It supports accessibility review, accessible forms, public publishing workflows, plain-language rewrites, multilingual draft variants, ADA Title II review support, tagged-PDF expectations, and records-ready export checklists.
 
-Current state: `1.0.0` public-use support release. CivicAccess includes deterministic checks, optional database-backed review records, a functional public UI at `/civicaccess`, and `civiccore==1.1.0` dependency alignment. It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval.
+Current state: `0.2.0` corrective demotion state. CivicAccess includes deterministic checks, optional database-backed review records, a public UI at `/civicaccess`, and `civiccore==1.1.0` dependency alignment. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label. CivicAccess does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval.
 
 ## For IT And Technical Staff
 
