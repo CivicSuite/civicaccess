@@ -5,6 +5,12 @@ from civicaccess.exports import build_accessible_export
 from civicaccess.main import app
 from civicaccess.multilingual import create_language_variant
 from civicaccess.plain_language import rewrite_plain_language
+from civicaccess.workflows import (
+    build_accessible_form_plan,
+    build_ada_title_ii_review_plan,
+    build_publishing_workflow_plan,
+    build_tagged_pdf_expectations,
+)
 
 
 client = TestClient(app)
@@ -18,6 +24,7 @@ def test_accessibility_review_returns_actionable_findings() -> None:
     assert result.findings[0].fix
     assert result.findings[1].wcag_reference == "WCAG 1.1.1 Non-text Content"
     assert "does not replace legal review" in result.disclaimer
+    assert result.next_steps
 
 
 def test_plain_language_rewrite_keeps_human_review_boundary() -> None:
@@ -25,6 +32,7 @@ def test_plain_language_rewrite_keeps_human_review_boundary() -> None:
 
     assert "pay before" in result.rewritten
     assert result.review_required is True
+    assert "source_text_preserved" in result.provenance
     assert "certified accessibility audit" in result.disclaimer
 
 
@@ -32,8 +40,9 @@ def test_language_variant_is_sample_and_review_required() -> None:
     result = create_language_variant(text="Contact the city for help.", language="es")
 
     assert result.language == "es"
-    assert "comunÃ­quese" in result.text
+    assert "comuniquese" in result.text
     assert result.review_required is True
+    assert result.status == "sample-created"
 
 
 def test_accessible_export_preserves_records_context() -> None:
@@ -42,6 +51,24 @@ def test_accessible_export_preserves_records_context() -> None:
     assert result.title == "Budget Hearing Notice"
     assert "Preserve source text and rewrite provenance for records requests." in result.checklist
     assert "municipal record" in result.retention_note
+    assert result.status == "checklist-created"
+
+
+def test_workflow_helpers_cover_public_use_scope() -> None:
+    form = build_accessible_form_plan(form_name="Service Request", fields=("name", "contact", "request"))
+    publishing = build_publishing_workflow_plan(
+        title="Budget Hearing",
+        has_review=True,
+        has_plain_language=True,
+        has_translation_review=True,
+    )
+    ada = build_ada_title_ii_review_plan(service_area="Public meetings", has_coordinator_review=True)
+    pdf = build_tagged_pdf_expectations(heading_levels=(1, 2, 2, 3))
+
+    assert form.status == "form-plan-created"
+    assert publishing.status == "publication-workflow-created"
+    assert ada.status == "review-support-package-created"
+    assert pdf.status == "tagged-pdf-plan-created"
 
 
 def test_api_review_success_shape() -> None:
@@ -54,6 +81,7 @@ def test_api_review_success_shape() -> None:
     payload = response.json()
     assert payload["status"] == "needs-fixes"
     assert payload["findings"][0]["fix"]
+    assert payload["next_steps"]
 
 
 def test_api_plain_language_and_language_variant() -> None:
@@ -72,6 +100,62 @@ def test_api_plain_language_and_language_variant() -> None:
     assert variant.json()["review_required"] is True
 
 
+def test_api_public_use_workflow_routes() -> None:
+    form = client.post(
+        "/api/v1/civicaccess/forms",
+        json={"form_name": "Public Records Request", "fields": ["name", "contact", "request"]},
+    )
+    workflow = client.post(
+        "/api/v1/civicaccess/publishing-workflow",
+        json={
+            "title": "Budget Hearing",
+            "has_review": True,
+            "has_plain_language": True,
+            "has_translation_review": True,
+        },
+    )
+    ada = client.post(
+        "/api/v1/civicaccess/ada-title-ii",
+        json={"service_area": "Public meetings", "has_coordinator_review": True},
+    )
+    pdf = client.post("/api/v1/civicaccess/tagged-pdf", json={"heading_levels": [1, 2, 3]})
+    export = client.post("/api/v1/civicaccess/export", json={"title": "Budget", "format": "pdf"})
+
+    assert form.json()["status"] == "form-plan-created"
+    assert workflow.json()["status"] == "publication-workflow-created"
+    assert ada.json()["status"] == "review-support-package-created"
+    assert pdf.json()["status"] == "tagged-pdf-plan-created"
+    assert export.json()["status"] == "checklist-created"
+    assert all(response.status_code == 200 for response in (form, workflow, ada, pdf, export))
+
+
+def test_adversarial_inputs_are_actionable_and_non_certifying() -> None:
+    empty_review = client.post(
+        "/api/v1/civicaccess/review",
+        json={"title": "", "body": "", "has_alt_text": False, "language": "en"},
+    )
+    unsupported_language = client.post(
+        "/api/v1/civicaccess/language-variant",
+        json={"text": "Contact the city.", "language": "tlh"},
+    )
+    unsupported_export = client.post(
+        "/api/v1/civicaccess/export",
+        json={"title": "Budget", "format": "docx"},
+    )
+    blocked_workflow = client.post("/api/v1/civicaccess/publishing-workflow", json={})
+    bad_pdf = client.post("/api/v1/civicaccess/tagged-pdf", json={"heading_levels": [2, 4]})
+
+    assert empty_review.json()["findings"][0]["code"] == "missing-body"
+    assert unsupported_language.json()["status"] == "unsupported-language-placeholder"
+    assert "Add a reviewed translation workflow" in unsupported_language.json()["fix"]
+    assert unsupported_export.json()["status"] == "unsupported-format"
+    assert "Choose html, pdf, markdown, or txt" in unsupported_export.json()["fix"]
+    assert blocked_workflow.json()["status"] == "blocked"
+    assert blocked_workflow.json()["fix"] == "Complete each blocker before publication."
+    assert bad_pdf.json()["status"] == "needs-fixes"
+    assert "certified ada compliance" not in str(empty_review.json()).lower()
+
+
 def test_public_ui_route_is_accessible_and_honest() -> None:
     response = client.get("/civicaccess")
 
@@ -80,7 +164,12 @@ def test_public_ui_route_is_accessible_and_honest() -> None:
     text = response.text
     assert '<a class="skip-link" href="#main">Skip to main content</a>' in text
     assert '<main id="main" tabindex="-1">' in text
-    assert "v0.1.1 accessibility foundation" in text
+    assert "v1.0.0 public-use support release" in text
+    assert 'id="runReview"' in text
+    assert "Show empty state" not in text
+    assert "Show error state" not in text
+    assert "Partial review pending" in text
+    assert "Review could not finish" in text
     assert "does not provide legal advice" in text
-    assert "certified accessibility audits" in text
+    assert "official translation certification" in text
     assert "zoning" not in text.casefold()

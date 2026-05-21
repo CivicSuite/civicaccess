@@ -7,8 +7,8 @@ from civicaccess.main import app
 client = TestClient(app)
 
 
-def test_package_version_is_011() -> None:
-    assert civicaccess.__version__ == "0.1.1"
+def test_package_version_is_100() -> None:
+    assert civicaccess.__version__ == "1.0.0"
 
 
 def test_root_endpoint_states_runtime_boundary() -> None:
@@ -17,11 +17,11 @@ def test_root_endpoint_states_runtime_boundary() -> None:
     payload = response.json()
 
     assert payload["name"] == "CivicAccess"
-    assert payload["version"] == "0.1.1"
-    assert payload["status"] == "accessibility foundation plus review persistence"
+    assert payload["version"] == "1.0.0"
+    assert payload["status"] == "public-use accessibility support release"
     assert "database-backed review records" in payload["message"]
-    assert "not implemented yet" in payload["message"]
-    assert payload["next_step"].startswith("Post-v0.1.1 roadmap")
+    assert "does not provide legal advice" in payload["message"]
+    assert payload["next_step"].startswith("Operate CivicAccess")
 
 
 def test_health_endpoint_reports_versions() -> None:
@@ -31,5 +31,5 @@ def test_health_endpoint_reports_versions() -> None:
 
     assert payload["status"] == "ok"
     assert payload["service"] == "civicaccess"
-    assert payload["version"] == "0.1.1"
-    assert payload["civiccore_version"] == "0.3.0"
+    assert payload["version"] == "1.0.0"
+    assert payload["civiccore_version"] == "1.1.0"

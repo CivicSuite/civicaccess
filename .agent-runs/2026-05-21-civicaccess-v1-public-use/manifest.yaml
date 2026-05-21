@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+pipeline_run:
+  id: "2026-05-21-civicaccess-v1-public-use"
+  type: module-release
+  branch: "release/civicaccess-v1-public-use"
+  goal: "Ship CivicAccess v1.0.0 as a public-use accessibility, plain-language, multilingual, ADA Title II review-support, and municipal-record export module."
+  allowed_paths:
+    - ".agent-runs/2026-05-21-civicaccess-v1-public-use/"
+    - ".github/workflows/"
+    - "civicaccess/"
+    - "docs/"
+    - "scripts/"
+    - "tests/"
+    - "README.md"
+    - "README.txt"
+    - "CHANGELOG.md"
+    - "CONTRIBUTING.md"
+    - "LICENSE"
+    - "LICENSE-CODE"
+    - "LICENSE-DOCS"
+    - ".gitignore"
+    - "AGENTS.md"
+    - "USER-MANUAL.md"
+    - "USER-MANUAL.txt"
+    - "SECURITY.md"
+    - "SUPPORT.md"
+    - "CODE_OF_CONDUCT.md"
+    - "MILESTONE_0_7_DONE.md"
+    - "PRODUCTION_DEPTH_REVIEW_PERSISTENCE_DONE.md"
+    - "pyproject.toml"
+  forbidden_paths:
+    - "../civiczone/"
+    - "../civicplan/"
+    - "../civicpermit/"
+    - "../civicinspect/"
+  non_goals:
+    - "Do not implement queued CivicSuite modules."
+    - "Do not claim certified ADA compliance, legal advice, official translation certification, or final publication approval."
+    - "Do not add live LLM calls or external municipal validation as a release requirement."
+  expected_outputs:
+    - "CivicAccess version surfaces read 1.0.0."
+    - "CivicCore dependency and health-contract surfaces align with the current released CivicCore package."
+    - "Runtime APIs cover accessible forms, publishing workflow, WCAG review support, plain-language rewrites, multilingual variants, ADA Title II review support, tagged-heading PDF expectations, and municipal-record accessible exports."
+    - "The /civicaccess public UI has no dead controls and is browser-verified at desktop and mobile widths with console, focus, loading, success, empty, error, and partial/degraded state evidence."
+    - "Adversarial local tests cover bad input, missing/stale records, unavailable persistence, unsupported languages, unsupported export formats, and no-certified-output boundaries."
+    - "README, user manual, changelog, security notes, docs index, reconciliation notes, and release evidence are updated."
+    - "bash scripts/verify-release.sh passes and creates v1.0.0 artifacts plus SHA256SUMS.txt."
+  required_gates:
+    - policy_passed
+    - tests_passed
+    - docs_passed
+    - browser_qa_passed
+    - release_gate_passed
+    - ci_green
+    - release_published
+    - suite_truth_integrated
+  risk: high
+  rollback_plan: "Revert the merged PR, delete or supersede the v1.0.0 release tag if published incorrectly, and restore CivicSuite installer truth to the previous CivicAccess version."
+  definition_of_done: "CivicAccess is not finished until every spec-required v1.0.0 surface is implemented, documented, tested, browser-verified, packaged, merged, released, reflected in CivicSuite suite truth, and the active release queue is advanced."
+  director_notes:
+    - "No intentional deferrals for required CivicAccess public-use scope."
+    - "Windows and macOS support are handled at the suite installer layer; this module must publish installable Python artifacts and honest docs."
+  control_loop:
+    active_control_state: ".agent-runs/2026-05-21-civicaccess-v1-public-use/active-control-state.md"
+    stop_condition_required_for_final_response: true
+    open_caveats_block_completion: true
+    post_push_ci_follow_through_required: true
+    execute_recommended_next_action_when_authorized: true
+    final_response_allowed_without_stop_condition: false

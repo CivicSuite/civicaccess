@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+current_rung: "CivicAccess v1.0.0"
+canonical_source: "C:\\Users\\scott\\OneDrive\\Desktop\\Claude\\CivicSuite-clerk-core-city-release\\docs\\CivicSuiteUnifiedSpec.md"
+rung_title: "CivicAccess Canonical Scope"
+proves: "CivicAccess is the suite-wide accessibility and plain-language layer for public-use release."
+required_modules:
+  - "CivicAccess"
+allowed_feature_terms:
+  - "accessible forms"
+  - "accessible publishing workflows"
+  - "WCAG review support"
+  - "plain-language rewrites"
+  - "multilingual variants"
+  - "ADA Title II review support"
+  - "tagged-heading PDF expectations"
+  - "records-ready accessible exports"
+  - "CivicCore"
+forbidden_feature_terms_without_replan:
+  - "CivicZone implementation"
+  - "CivicPlan implementation"
+  - "CivicPermit implementation"
+  - "CivicInspect implementation"
+scope_bullets:
+  - "Accessible forms."
+  - "Accessible publishing workflow."
+  - "WCAG review support."
+  - "Plain-language rewrites."
+  - "Multilingual variants."
+  - "ADA Title II review support."
+  - "Tagged-heading PDF expectations."
+  - "Records-ready accessible exports."
+exit_criteria:
+  - "All CivicAccess canonical scope bullets are implemented in deterministic runtime APIs or UI workflows."
+  - "All required docs, tests, browser QA, release artifacts, and suite truth are complete."
+replan_required_if:
+  - "README/CHANGELOG/docs index names another active module."
+  - "implementation path belongs to another module."
+  - "user wording conflicts with CivicSuiteUnifiedSpec.md or ACTIVE_RELEASE_QUEUE.md."
