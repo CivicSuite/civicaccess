@@ -2,13 +2,14 @@
 
 CivicAccess is the CivicSuite module for accessibility, plain-language, multilingual, and ADA Title II review-support workflows.
 
-Current state: **v0.2.0 corrective demotion state**. This repo contains a deterministic scaffold with a FastAPI package aligned to the published CivicCore v1.2.0 release wheel, health/root endpoints, WCAG-aligned review support, optional database-backed review records via `CIVICACCESS_REVIEW_DB_URL`, accessible form planning, accessible publishing workflow checks, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and an API-backed public review UI at `/civicaccess`. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label.
+Current state: **v0.2.0 corrective demotion state**. This repo contains a deterministic scaffold with a FastAPI package aligned to the published CivicCore v1.2.0 release wheel, health/root endpoints, readiness gates, WCAG-aligned review support, optional database-backed review records via `CIVICACCESS_REVIEW_DB_URL`, accessible form planning, accessible publishing workflow checks, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and an API-backed public review UI at `/civicaccess`. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label.
 
 CivicAccess does **not** provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval. City staff, ADA coordinators, translators, and qualified reviewers remain responsible for publication decisions.
 
 ## What CivicAccess Does
 
 - Reviews public content for actionable WCAG-aligned issues.
+- Reports whether local review-record persistence is ready through `/ready`.
 - Checks accessible form publication basics: labels, required fields, validation copy, and record context.
 - Builds a staff publication workflow with accessibility, plain-language, translation-review, export, and approval steps.
 - Rewrites common municipal jargon into plainer language while preserving source/rewrite provenance.
@@ -37,6 +38,7 @@ bash scripts/verify-release.sh
 
 - `GET /` returns current module status and boundaries.
 - `GET /health` returns package and CivicCore version information.
+- `GET /ready` and `GET /api/v1/civicaccess/readiness` report whether local review persistence is configured and schema-ready.
 - `GET /civicaccess` returns the API-backed public accessibility review UI.
 - `POST /api/v1/civicaccess/review` returns accessibility findings and next steps.
 - `GET /api/v1/civicaccess/reviews/{review_id}` retrieves persisted review records when `CIVICACCESS_REVIEW_DB_URL` is configured.
@@ -48,7 +50,9 @@ bash scripts/verify-release.sh
 - `POST /api/v1/civicaccess/tagged-pdf` returns tagged-PDF heading expectations.
 - `POST /api/v1/civicaccess/export` returns a records-ready accessibility export checklist.
 
-Set `CIVICACCESS_REVIEW_DB_URL` to enable persistent accessibility review records. When unset, CivicAccess continues to use deterministic in-memory review behavior for local examples.
+Set `CIVICACCESS_REVIEW_DB_URL` to enable persistent accessibility review records. When unset, CivicAccess continues to use deterministic in-memory review behavior for local examples. `/ready` remains `not-ready` until review-record persistence is configured and schema-ready.
+
+Use the `civicaccess-db-status` console script with the same SQLAlchemy URL to initialize and verify the local CivicAccess schema before pointing the runtime at a review database.
 
 ## License
 

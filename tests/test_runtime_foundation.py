@@ -37,7 +37,7 @@ def test_root_endpoint_states_runtime_boundary() -> None:
     assert payload["status"] == "corrective demotion state"
     assert "database-backed review records" in payload["message"]
     assert "does not provide legal advice" in payload["message"]
-    assert payload["next_step"].startswith("Use CivicAccess for local review support only")
+    assert "verify /ready" in payload["next_step"]
 
 
 def test_health_endpoint_reports_versions() -> None:

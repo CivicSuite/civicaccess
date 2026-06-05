@@ -85,7 +85,7 @@ def root() -> dict[str, str]:
             "CivicAccess is an honest v0.2.0 deterministic scaffold with accessible-form planning, publishing workflow checks, WCAG-aligned review support, optional database-backed review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and an API-backed public review UI. "
             "It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval."
         ),
-        "next_step": "Use CivicAccess for local review support only; do not treat it as finished or public-use ready until a future independent audit signs off against the full CivicSuite Section 2 gate.",
+        "next_step": "Configure CIVICACCESS_REVIEW_DB_URL and verify /ready before public use.",
     }
 
 
@@ -99,6 +99,20 @@ def health() -> dict[str, str]:
         "version": __version__,
         "civiccore_version": CIVICCORE_VERSION,
     }
+
+
+@app.get("/ready")
+def ready() -> dict[str, object]:
+    """Return public-use readiness for local review-record persistence."""
+
+    return _readiness_payload()
+
+
+@app.get("/api/v1/civicaccess/readiness")
+def readiness() -> dict[str, object]:
+    """Return detailed CivicAccess local persistence readiness for operators."""
+
+    return _readiness_payload()
 
 
 @app.get("/civicaccess", response_class=HTMLResponse)
@@ -250,6 +264,40 @@ def _get_review_repository() -> AccessibilityReviewRepository:
         _review_db_url = db_url
         _review_repository = AccessibilityReviewRepository(db_url=db_url)
     return _review_repository
+
+
+def _readiness_payload() -> dict[str, object]:
+    db_url = _review_database_url()
+    if db_url is None:
+        return {
+            "status": "not-ready",
+            "ready": False,
+            "review_database_configured": False,
+            "schema_ready": False,
+            "schema_version": None,
+            "expected_schema_version": None,
+            "review_count": 0,
+            "blockers": [
+                "Set CIVICACCESS_REVIEW_DB_URL to a local review-record database.",
+            ],
+        }
+
+    repository = _get_review_repository()
+    schema_status = repository.schema_status()
+    blockers: list[str] = []
+    if not schema_status.ready:
+        blockers.append("Run the local CivicAccess schema status/migration check.")
+    ready_for_public_use = not blockers
+    return {
+        "status": "ready" if ready_for_public_use else "not-ready",
+        "ready": ready_for_public_use,
+        "review_database_configured": True,
+        "schema_ready": schema_status.ready,
+        "schema_version": schema_status.schema_version,
+        "expected_schema_version": schema_status.expected_schema_version,
+        "review_count": repository.review_count(),
+        "blockers": blockers,
+    }
 
 
 def _dispose_review_repository() -> None:
