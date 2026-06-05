@@ -84,6 +84,21 @@ def test_api_review_success_shape() -> None:
     assert payload["next_steps"]
 
 
+def test_api_review_validation_is_actionable() -> None:
+    missing = client.post("/api/v1/civicaccess/review", json={"title": "Notice"})
+    oversized = client.post(
+        "/api/v1/civicaccess/review",
+        json={"title": "Notice", "body": "x" * 5001, "has_alt_text": True, "language": "en"},
+    )
+
+    assert missing.status_code == 422
+    missing_detail = missing.json()["detail"]
+    assert "body" in missing_detail["fields"]
+    assert "fields array" in missing_detail["fix"]
+    assert oversized.status_code == 422
+    assert "body" in oversized.json()["detail"]["fields"]
+
+
 def test_api_plain_language_and_language_variant() -> None:
     plain = client.post(
         "/api/v1/civicaccess/plain-language",

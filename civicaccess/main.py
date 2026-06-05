@@ -3,9 +3,10 @@
 import os
 
 from civiccore import __version__ as CIVICCORE_VERSION
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 from civicaccess import __version__
 from civicaccess.access_review import AccessibilityReviewRepository, StoredAccessibilityReview, review_accessibility
@@ -32,45 +33,45 @@ _review_db_url: str | None = None
 
 
 class AccessibilityReviewRequest(BaseModel):
-    title: str = ""
-    body: str
+    title: str = Field(default="", max_length=500)
+    body: str = Field(max_length=5000)
     has_alt_text: bool = False
-    language: str = "en"
+    language: str = Field(default="en", min_length=1, max_length=80)
 
 
 class PlainLanguageRequest(BaseModel):
-    text: str
+    text: str = Field(min_length=1, max_length=5000)
 
 
 class LanguageVariantRequest(BaseModel):
-    text: str
-    language: str
+    text: str = Field(min_length=1, max_length=5000)
+    language: str = Field(min_length=1, max_length=80)
 
 
 class AccessibleExportRequest(BaseModel):
-    title: str
-    format: str = "html"
+    title: str = Field(min_length=1, max_length=500)
+    format: str = Field(default="html", min_length=1, max_length=40)
 
 
 class AccessibleFormRequest(BaseModel):
-    form_name: str = ""
-    fields: list[str] = []
+    form_name: str = Field(default="", max_length=500)
+    fields: list[str] = Field(default_factory=list, max_length=100)
 
 
 class PublishingWorkflowRequest(BaseModel):
-    title: str = ""
+    title: str = Field(default="", max_length=500)
     has_review: bool = False
     has_plain_language: bool = False
     has_translation_review: bool = False
 
 
 class AdaTitleIiReviewRequest(BaseModel):
-    service_area: str = ""
+    service_area: str = Field(default="", max_length=500)
     has_coordinator_review: bool = False
 
 
 class TaggedPdfExpectationRequest(BaseModel):
-    heading_levels: list[int] = []
+    heading_levels: list[int] = Field(default_factory=list, max_length=200)
 
 
 @app.get("/")
@@ -99,6 +100,33 @@ def health() -> dict[str, str]:
         "version": __version__,
         "civiccore_version": CIVICCORE_VERSION,
     }
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    _request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    fields = sorted(
+        {
+            ".".join(str(part) for part in error.get("loc", [])[1:])
+            for error in exc.errors()
+            if len(error.get("loc", [])) > 1
+        }
+    )
+    field_list = ", ".join(fields) if fields else "request body"
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": {
+                "message": f"CivicAccess could not validate: {field_list}.",
+                "fix": (
+                    "Send a JSON body that includes the required field names listed in "
+                    "the fields array, using strings for text inputs and booleans for yes/no inputs."
+                ),
+                "fields": fields,
+            }
+        },
+    )
 
 
 @app.get("/ready")

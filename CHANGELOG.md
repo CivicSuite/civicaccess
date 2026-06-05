@@ -11,6 +11,7 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 - Aligned CivicAccess to the published CivicCore v1.2.0 release wheel and SHA256.
 - Wired the public `/civicaccess` review form to the accessibility review API.
 - Added local schema status and `/ready` readiness gates for review-record persistence.
+- Added bounded request models and actionable validation errors for public API payloads.
 
 ## [0.2.0] - 2026-05-21
 
