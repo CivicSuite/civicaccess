@@ -4,11 +4,11 @@
 
 CivicAccess helps cities make public information easier to read, reach, translate, review, and preserve. It supports accessibility review, accessible forms, public publishing workflows, plain-language rewrites, multilingual draft variants, ADA Title II review support, tagged-PDF expectations, and records-ready export checklists.
 
-Current state: `0.2.0` corrective demotion state. CivicAccess includes deterministic checks, optional database-backed review records, a public UI at `/civicaccess`, and `civiccore==1.1.0` dependency alignment. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label. CivicAccess does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval.
+Current state: `0.2.0` corrective demotion state. CivicAccess includes deterministic checks, optional database-backed review records, a public UI at `/civicaccess`, and CivicCore v1.2.0 release-wheel alignment. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label. CivicAccess does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval.
 
 ## For IT And Technical Staff
 
-CivicAccess is a FastAPI Python package pinned to `civiccore==1.1.0`. The current runtime exposes:
+CivicAccess is a FastAPI Python package pinned to the published `CivicCore v1.2.0` release wheel. The current runtime exposes:
 
 - `GET /`
 - `GET /health`
@@ -28,6 +28,7 @@ Set `CIVICACCESS_REVIEW_DB_URL` to persist review requests, findings, WCAG refer
 Run local verification with:
 
 ```powershell
+python -m pip install https://github.com/CivicSuite/civiccore/releases/download/v1.2.0/civiccore-1.2.0-py3-none-any.whl
 python -m pip install -e ".[dev]"
 python -m pytest -q
 bash scripts/verify-release.sh
@@ -38,7 +39,7 @@ bash scripts/verify-release.sh
 ```mermaid
 flowchart LR
   PublicUser["Resident or staff publisher"] --> CivicAccess["CivicAccess"]
-  CivicAccess --> CivicCore["CivicCore v1.1.0"]
+  CivicAccess --> CivicCore["CivicCore v1.2.0"]
   CivicClerk["CivicClerk"] -. uses accessibility support .-> CivicAccess
   CivicCode["CivicCode"] -. uses accessibility support .-> CivicAccess
 ```

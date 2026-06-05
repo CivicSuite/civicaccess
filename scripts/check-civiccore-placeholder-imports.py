@@ -32,7 +32,7 @@ def main() -> int:
             package = match.group(1)
             if package in PLACEHOLDERS:
                 failures.append(
-                    f"{path}: civiccore.{package} is a placeholder package in v0.2.0. "
+                    f"{path}: civiccore.{package} is a placeholder package in CivicCore v1.2.0. "
                     "See AGENTS.md section 3.1."
                 )
 
@@ -48,5 +48,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
 

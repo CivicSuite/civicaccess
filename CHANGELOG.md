@@ -6,6 +6,10 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 
 ## [Unreleased]
 
+### Changed
+
+- Aligned CivicAccess to the published CivicCore v1.2.0 release wheel and SHA256.
+
 ## [0.2.0] - 2026-05-21
 
 ### Corrected
