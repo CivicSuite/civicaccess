@@ -1,10 +1,10 @@
-"""Static public UI for CivicAccess v0.2.0."""
+"""Public UI for CivicAccess v0.2.0."""
 
 from __future__ import annotations
 
 
 def render_public_lookup_page() -> str:
-    """Render the accessible public-facing CivicAccess page."""
+    """Render the accessible public-facing CivicAccess review page."""
 
     return """<!DOCTYPE html>
 <html lang="en">
@@ -119,37 +119,61 @@ def render_public_lookup_page() -> str:
   if (initialParams.has("notice")) notice.value = initialParams.get("notice");
   if (initialParams.get("alt") === "1") altText.checked = true;
 
-  function setResult(kind, heading, body, items) {
-    result.className = "result" + (kind ? " " + kind : "");
-    const list = items && items.length ? "<ul>" + items.map((item) => "<li>" + item + "</li>").join("") + "</ul>" : "";
-    result.innerHTML = "<h3>" + heading + "</h3><p>" + body + "</p>" + list;
+  function appendText(tagName, text) {
+    const node = document.createElement(tagName);
+    node.textContent = text;
+    result.appendChild(node);
+    return node;
   }
 
-  runReview.addEventListener("click", () => {
-    setResult("pending", "Loading review", "Checking the notice text and publication fields.", []);
-    window.setTimeout(() => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("force_error") === "1") {
-          throw new Error("forced qa error");
-        }
-        const fixes = [];
-        if (!title.value.trim()) fixes.push("Add a short title that names the service, deadline, or public action.");
-        if (!notice.value.trim()) fixes.push("Add the resident-facing notice text before publication review.");
-        if (!altText.checked) fixes.push("Add alt text for non-decorative images or mark decorative images as decorative.");
-        if (fixes.length === 0) {
-          fixes.push("Add a plain-language summary and preserve the source text with the record.");
-          setResult("", "Sample checks passed", "Staff review is still required before publication.", fixes);
-        } else if (!title.value.trim() && !notice.value.trim()) {
-          setResult("warning", "No notice text yet", "Add a title, resident-facing notice text, and image context before running the review.", fixes);
-        } else {
-          fixes.push("Add a plain-language summary and preserve the source text with the record.");
-          setResult("warning", "Needs fixes", "Resolve these items before staff publication approval.", fixes);
-        }
-      } catch (error) {
-        setResult("warning", "Review could not finish", "Check that the notice text is present, then run the review again. If this happens in the installed stack, staff should check the CivicAccess service health endpoint.", []);
+  function setResult(kind, heading, body, items) {
+    result.className = "result" + (kind ? " " + kind : "");
+    result.replaceChildren();
+    appendText("h3", heading);
+    appendText("p", body);
+    if (items && items.length) {
+      const list = document.createElement("ul");
+      for (const item of items) {
+        const listItem = document.createElement("li");
+        listItem.textContent = item;
+        list.appendChild(listItem);
       }
-    }, 250);
+      result.appendChild(list);
+    }
+  }
+
+  runReview.addEventListener("click", async () => {
+    setResult("pending", "Loading review", "Checking the notice text and publication fields.", []);
+    runReview.disabled = true;
+    try {
+      const response = await fetch("/api/v1/civicaccess/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.value,
+          body: notice.value,
+          has_alt_text: altText.checked,
+          language: "en",
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        const detail = payload.detail || {};
+        throw new Error([detail.message, detail.fix].filter(Boolean).join(" "));
+      }
+      const fixes = (payload.findings || []).map((finding) => finding.fix);
+      if (payload.status === "passes-sample-checks") {
+        setResult("", "Sample checks passed", "Staff review is still required before publication.", payload.next_steps || []);
+      } else if (fixes.length) {
+        setResult("warning", "Needs fixes", "Resolve these items before staff publication approval.", fixes);
+      } else {
+        setResult("warning", "Review needs staff attention", payload.disclaimer || "Staff review is required before publication.", []);
+      }
+    } catch (error) {
+      setResult("warning", "Review could not finish", error.message || "Check that the notice text is present, then run the review again. If this happens in the installed stack, staff should check the CivicAccess service health endpoint.", []);
+    } finally {
+      runReview.disabled = false;
+    }
   });
 </script>
 </body>

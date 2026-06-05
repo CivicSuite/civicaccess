@@ -2,7 +2,7 @@
 
 CivicAccess is the CivicSuite module for accessibility, plain-language, multilingual, and ADA Title II review-support workflows.
 
-Current state: **v0.2.0 corrective demotion state**. This repo contains a deterministic scaffold with a FastAPI package aligned to the published CivicCore v1.2.0 release wheel, health/root endpoints, WCAG-aligned review support, optional database-backed review records via `CIVICACCESS_REVIEW_DB_URL`, accessible form planning, accessible publishing workflow checks, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and a public UI at `/civicaccess`. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label.
+Current state: **v0.2.0 corrective demotion state**. This repo contains a deterministic scaffold with a FastAPI package aligned to the published CivicCore v1.2.0 release wheel, health/root endpoints, WCAG-aligned review support, optional database-backed review records via `CIVICACCESS_REVIEW_DB_URL`, accessible form planning, accessible publishing workflow checks, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and an API-backed public review UI at `/civicaccess`. The previous `v1.0.0` release was published in error and is superseded by this honest sub-1.0.0 label.
 
 CivicAccess does **not** provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval. City staff, ADA coordinators, translators, and qualified reviewers remain responsible for publication decisions.
 
@@ -16,7 +16,7 @@ CivicAccess does **not** provide legal advice, certified ADA compliance, officia
 - Produces ADA Title II review-support checklists without claiming certification.
 - Checks tagged-PDF heading expectations before publication.
 - Builds records-ready export checklists that preserve source/rewrite provenance.
-- Provides a local accessibility support UI at `/civicaccess`.
+- Provides a local API-backed accessibility review UI at `/civicaccess`.
 
 ## Release Integrity Correction
 
@@ -37,7 +37,7 @@ bash scripts/verify-release.sh
 
 - `GET /` returns current module status and boundaries.
 - `GET /health` returns package and CivicCore version information.
-- `GET /civicaccess` returns the public UI.
+- `GET /civicaccess` returns the API-backed public accessibility review UI.
 - `POST /api/v1/civicaccess/review` returns accessibility findings and next steps.
 - `GET /api/v1/civicaccess/reviews/{review_id}` retrieves persisted review records when `CIVICACCESS_REVIEW_DB_URL` is configured.
 - `POST /api/v1/civicaccess/forms` returns accessible form publication checks.

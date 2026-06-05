@@ -82,7 +82,7 @@ def root() -> dict[str, str]:
         "version": __version__,
         "status": "corrective demotion state",
         "message": (
-            "CivicAccess is an honest v0.2.0 deterministic scaffold with accessible-form planning, publishing workflow checks, WCAG-aligned review support, optional database-backed review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and a public UI. "
+            "CivicAccess is an honest v0.2.0 deterministic scaffold with accessible-form planning, publishing workflow checks, WCAG-aligned review support, optional database-backed review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and an API-backed public review UI. "
             "It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval."
         ),
         "next_step": "Use CivicAccess for local review support only; do not treat it as finished or public-use ready until a future independent audit signs off against the full CivicSuite Section 2 gate.",
