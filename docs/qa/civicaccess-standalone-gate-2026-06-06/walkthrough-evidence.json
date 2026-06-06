@@ -1,0 +1,85 @@
+{
+  "startedAt": "2026-06-06T16:11:11.561Z",
+  "routes": [
+    {
+      "name": "public-ui",
+      "route": "/civicaccess",
+      "status": 200,
+      "title": "CivicAccess Public Accessibility Support"
+    },
+    {
+      "name": "staff-ui",
+      "route": "/civicaccess/staff",
+      "status": 200,
+      "title": "CivicAccess Staff Workspace"
+    },
+    {
+      "name": "staff-mobile",
+      "route": "/civicaccess/staff",
+      "status": 200
+    }
+  ],
+  "actions": [
+    {
+      "workflow": "public-review",
+      "result": "Sample checks passed\n\nStaff review is still required before publication.\n\nResolve each high-severity finding before publication.\nHave staff or an ADA coordinator review the final publication decision.\nPreserve the review record with the source content and publication package."
+    },
+    {
+      "workflow": "staff-save-export",
+      "readiness": "Ready\n\nReview database ready. Saved reviews: 1.",
+      "contracts": "Contracts published\n\ncivicaccess.publication_accessibility_review.v1, civicaccess.records_export.v1",
+      "staffStatus": "Review saved\n\n8302bf61-887f-4116-b084-eeec0c6cf7f4: passes-sample-checks",
+      "queueText": "Council agenda accessibility package\n\npasses-sample-checks; 0 finding(s); en\n\nExport for records\nMain Street water notice\n\npasses-sample-checks; 0 finding(s); en\n\nExport for records",
+      "exportText": "Records export ready\n\ncivicrecords-ai: checklist-created. Keep the source, rewritten text, reviewer, and publication timestamp with the municipal record."
+    }
+  ],
+  "console": [],
+  "api": {
+    "ready": {
+      "status": "ready",
+      "ready": true,
+      "review_database_configured": true,
+      "review_database_url": "sqlite:///C:\\dev\\Claude\\civicaccess\\.tmp-runtime-data\\civicaccess-reviews.db",
+      "schema_ready": true,
+      "schema_version": "2026-06-05-001",
+      "expected_schema_version": "2026-06-05-001",
+      "review_count": 2,
+      "blockers": []
+    },
+    "contracts": {
+      "status": "ok",
+      "module": "civicaccess",
+      "provides": [
+        {
+          "contract": "civicaccess.publication_accessibility_review.v1",
+          "endpoint": "/api/v1/civicaccess/review",
+          "purpose": "Create a persisted accessibility review before publication."
+        },
+        {
+          "contract": "civicaccess.records_export.v1",
+          "endpoint": "/api/v1/civicaccess/reviews/{review_id}/records-export",
+          "target_module": "civicrecords-ai",
+          "purpose": "Export review provenance and checklist data for records retention."
+        }
+      ],
+      "downstream_ready_for": [
+        "civiczone public notice text",
+        "civicplan policy summaries",
+        "civicpermit applicant forms",
+        "civicinspect notices",
+        "civicgrants public opportunity notices",
+        "civicprocure RFP and award packets"
+      ]
+    },
+    "reviewsCount": 2,
+    "firstReview": {
+      "review_id": "8302bf61-887f-4116-b084-eeec0c6cf7f4",
+      "title": "Council agenda accessibility package",
+      "language": "en",
+      "status": "passes-sample-checks",
+      "finding_count": 0,
+      "created_at": "2026-06-06T16:11:13.117155"
+    }
+  },
+  "finishedAt": "2026-06-06T16:11:13.914Z"
+}
