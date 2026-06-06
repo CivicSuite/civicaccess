@@ -189,6 +189,16 @@ class AccessibilityReviewRepository:
             return None
         return _row_to_stored_review(row)
 
+    def list_reviews(self, *, limit: int = 25) -> tuple[StoredAccessibilityReview, ...]:
+        bounded_limit = max(1, min(limit, 100))
+        with self.engine.begin() as connection:
+            rows = connection.execute(
+                sa.select(accessibility_review_records)
+                .order_by(accessibility_review_records.c.created_at.desc())
+                .limit(bounded_limit)
+            ).mappings().all()
+        return tuple(_row_to_stored_review(row) for row in rows)
+
 
 def review_accessibility(*, title: str, body: str, has_alt_text: bool, language: str) -> AccessibilityReview:
     """Return deterministic sample accessibility findings without live LLM calls."""

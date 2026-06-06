@@ -53,7 +53,7 @@ def render_public_lookup_page() -> str:
   <p class="eyebrow">CivicSuite / CivicAccess</p>
   <h1>Make public information easier to read, reach, and preserve.</h1>
   <p class="lede">CivicAccess gives staff a deterministic review path for accessible forms, public notices, plain-language rewrites, multilingual samples, ADA Title II review support, tagged-PDF expectations, and municipal-record exports.</p>
-  <p><span class="badge">v0.2.0 corrective demotion state</span></p>
+  <p><span class="badge">v0.2.0 standalone readiness candidate</span></p>
 </header>
 <main id="main" tabindex="-1">
   <section class="grid" aria-labelledby="review-title">
@@ -174,6 +174,175 @@ def render_public_lookup_page() -> str:
     } finally {
       runReview.disabled = false;
     }
+  });
+</script>
+</body>
+</html>
+"""
+
+
+def render_staff_page() -> str:
+    """Render the staff review workspace for saved CivicAccess work."""
+
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CivicAccess Staff Workspace</title>
+<style>
+  :root { --ink:#17202a; --muted:#56606a; --paper:#fffdf7; --blue:#175b83; --green:#2f6b50; --gold:#d8b45b; --line:#d7c8a8; --danger:#9a3d2f; }
+  * { box-sizing: border-box; }
+  body { margin:0; color:var(--ink); font-family:"Aptos","Segoe UI",sans-serif; background:#f7f1e6; }
+  .skip-link { position:absolute; left:1rem; top:-4rem; background:var(--ink); color:white; padding:.7rem 1rem; border-radius:4px; z-index:10; }
+  .skip-link:focus { top:1rem; }
+  header, main, footer { width:min(1180px, calc(100% - 32px)); margin:0 auto; }
+  header { padding:34px 0 18px; }
+  .eyebrow { color:var(--blue); text-transform:uppercase; font-weight:800; font-size:.8rem; }
+  h1 { margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(2rem,5vw,3.8rem); line-height:1; }
+  .lede { max-width:860px; font-size:1.12rem; line-height:1.55; color:#31404a; }
+  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+  .panel { grid-column:span 6; min-width:0; padding:20px; border:1px solid var(--line); border-radius:8px; background:rgba(255,253,247,.96); }
+  .panel.large { grid-column:span 12; }
+  h2,h3 { font-family:Georgia,"Times New Roman",serif; }
+  h2 { margin:0 0 12px; font-size:1.75rem; }
+  p, li { line-height:1.6; }
+  label { display:block; margin:.8rem 0 .35rem; font-weight:800; }
+  textarea, input, select, button { width:100%; border:1px solid #9fb0b8; border-radius:6px; padding:.8rem 1rem; font:inherit; }
+  textarea, input, select { background:#f3f7f8; color:var(--ink); }
+  button { width:fit-content; min-width:180px; margin-top:1rem; border:0; background:var(--blue); color:white; font-weight:900; cursor:pointer; }
+  button:hover { background:#104462; }
+  button:disabled { background:#6d7b83; cursor:not-allowed; }
+  .result { margin-top:14px; padding:14px; border-left:6px solid var(--green); border-radius:6px; background:white; }
+  .warning { border-left-color:var(--danger); background:#fff8f4; }
+  .muted { color:var(--muted); }
+  .review-list { display:grid; gap:10px; }
+  .review-card { border:1px solid var(--line); border-radius:6px; padding:12px; background:white; }
+  .review-card button { min-width:140px; }
+  footer { padding:34px 0 52px; color:var(--muted); }
+  :focus-visible { outline:4px solid var(--gold); outline-offset:3px; }
+  @media (max-width:760px) { .panel{grid-column:span 12;padding:18px}button{width:100%} }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header>
+  <p class="eyebrow">CivicSuite / CivicAccess staff</p>
+  <h1>Review, preserve, and export accessible publication work.</h1>
+  <p class="lede">This workspace gives staff a saved local queue for accessibility reviews, records-ready exports, and downstream publication contracts used by other CivicSuite modules.</p>
+</header>
+<main id="main" tabindex="-1">
+  <section class="grid" aria-labelledby="new-review-title">
+    <article class="panel">
+      <h2 id="new-review-title">Create saved review</h2>
+      <label for="title">Publication title</label>
+      <input id="title" value="Public meeting notice">
+      <label for="body">Publication text</label>
+      <textarea id="body" rows="6">Residents may request an accommodation before the meeting.</textarea>
+      <label><input id="altText" type="checkbox" style="width:auto"> Images already have alt text</label>
+      <button id="createReview" type="button">Save review</button>
+      <div id="createStatus" class="result" role="status" aria-live="polite">
+        <p>Saved reviews appear in the staff queue and can be exported for records retention.</p>
+      </div>
+    </article>
+    <article class="panel">
+      <h2>System readiness</h2>
+      <div id="readiness" class="result" role="status" aria-live="polite"><p>Loading readiness...</p></div>
+      <h2>Downstream contracts</h2>
+      <div id="contracts" class="result" role="status" aria-live="polite"><p>Loading integration contracts...</p></div>
+    </article>
+    <article class="panel large">
+      <h2>Saved review queue</h2>
+      <div id="reviews" class="review-list" role="status" aria-live="polite"><p>Loading saved reviews...</p></div>
+      <div id="exportResult" class="result" role="status" aria-live="polite"><p>Select a saved review to export a records-ready package.</p></div>
+    </article>
+  </section>
+</main>
+<footer><p>CivicAccess staff outputs are advisory. Staff approval, qualified translation review, and ADA coordinator review remain required for official publication decisions.</p></footer>
+<script>
+  const title = document.getElementById("title");
+  const body = document.getElementById("body");
+  const altText = document.getElementById("altText");
+  const createReview = document.getElementById("createReview");
+  const createStatus = document.getElementById("createStatus");
+  const readiness = document.getElementById("readiness");
+  const contracts = document.getElementById("contracts");
+  const reviews = document.getElementById("reviews");
+  const exportResult = document.getElementById("exportResult");
+
+  function replaceWithText(node, heading, text, warning=false) {
+    node.className = "result" + (warning ? " warning" : "");
+    node.replaceChildren();
+    const h = document.createElement("h3");
+    h.textContent = heading;
+    const p = document.createElement("p");
+    p.textContent = text;
+    node.append(h, p);
+  }
+
+  async function loadReadiness() {
+    const payload = await (await fetch("/api/v1/civicaccess/readiness")).json();
+    replaceWithText(readiness, payload.ready ? "Ready" : "Needs setup", payload.ready ? `Review database ready. Saved reviews: ${payload.review_count}.` : (payload.blockers || []).join(" "), !payload.ready);
+  }
+
+  async function loadContracts() {
+    const payload = await (await fetch("/api/v1/civicaccess/integration-contracts")).json();
+    const names = (payload.provides || []).map((item) => item.contract).join(", ");
+    replaceWithText(contracts, "Contracts published", names || "No contracts published.", false);
+  }
+
+  async function loadReviews() {
+    const payload = await (await fetch("/api/v1/civicaccess/reviews")).json();
+    reviews.replaceChildren();
+    if (!payload.reviews || payload.reviews.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No saved reviews yet.";
+      reviews.appendChild(empty);
+      return;
+    }
+    for (const review of payload.reviews) {
+      const card = document.createElement("article");
+      card.className = "review-card";
+      const heading = document.createElement("h3");
+      heading.textContent = review.title || "Untitled publication";
+      const summary = document.createElement("p");
+      summary.textContent = `${review.status}; ${review.finding_count} finding(s); ${review.language}`;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Export for records";
+      button.addEventListener("click", () => exportReview(review.review_id));
+      card.append(heading, summary, button);
+      reviews.appendChild(card);
+    }
+  }
+
+  async function exportReview(reviewId) {
+    const payload = await (await fetch(`/api/v1/civicaccess/reviews/${reviewId}/records-export`, { method: "POST" })).json();
+    replaceWithText(exportResult, "Records export ready", `${payload.target_module}: ${payload.export.status}. ${payload.export.retention_note}`);
+  }
+
+  createReview.addEventListener("click", async () => {
+    createReview.disabled = true;
+    try {
+      const response = await fetch("/api/v1/civicaccess/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.value, body: body.value, has_alt_text: altText.checked, language: "en" }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail?.message || "Review failed.");
+      replaceWithText(createStatus, "Review saved", `${payload.review_id}: ${payload.status}`);
+      await Promise.all([loadReadiness(), loadReviews()]);
+    } catch (error) {
+      replaceWithText(createStatus, "Review could not be saved", error.message || "Check service health and try again.", true);
+    } finally {
+      createReview.disabled = false;
+    }
+  });
+
+  Promise.all([loadReadiness(), loadContracts(), loadReviews()]).catch((error) => {
+    replaceWithText(readiness, "Workspace could not load", error.message || "Check CivicAccess service health.", true);
   });
 </script>
 </body>

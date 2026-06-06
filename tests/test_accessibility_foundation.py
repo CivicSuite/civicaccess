@@ -82,6 +82,7 @@ def test_api_review_success_shape() -> None:
     assert payload["status"] == "needs-fixes"
     assert payload["findings"][0]["fix"]
     assert payload["next_steps"]
+    assert payload["review_id"]
 
 
 def test_api_review_validation_is_actionable() -> None:
@@ -179,7 +180,7 @@ def test_public_ui_route_is_accessible_and_honest() -> None:
     text = response.text
     assert '<a class="skip-link" href="#main">Skip to main content</a>' in text
     assert '<main id="main" tabindex="-1">' in text
-    assert "v0.2.0 corrective demotion state" in text
+    assert "v0.2.0 standalone readiness candidate" in text
     assert 'id="runReview"' in text
     assert 'fetch("/api/v1/civicaccess/review"' in text
     assert "result.replaceChildren()" in text
@@ -191,3 +192,18 @@ def test_public_ui_route_is_accessible_and_honest() -> None:
     assert "does not provide legal advice" in text
     assert "official translation certification" in text
     assert "zoning" not in text.casefold()
+
+
+def test_staff_ui_route_is_api_wired_and_contract_aware() -> None:
+    response = client.get("/civicaccess/staff")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    text = response.text
+    assert '<a class="skip-link" href="#main">Skip to main content</a>' in text
+    assert "Saved review queue" in text
+    assert 'fetch("/api/v1/civicaccess/readiness")' in text
+    assert 'fetch("/api/v1/civicaccess/integration-contracts")' in text
+    assert 'fetch("/api/v1/civicaccess/reviews")' in text
+    assert 'records-export' in text
+    assert "result.innerHTML" not in text

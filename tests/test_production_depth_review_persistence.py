@@ -96,15 +96,24 @@ def test_api_persists_and_retrieves_review_records(monkeypatch, tmp_path) -> Non
     db_path.unlink()
 
 
-def test_readiness_requires_configured_review_database() -> None:
-    response = client.get("/api/v1/civicaccess/readiness")
+def test_default_local_database_makes_readiness_ready(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("CIVICACCESS_REVIEW_DB_URL", raising=False)
+    monkeypatch.setenv("CIVICACCESS_DATA_DIR", str(tmp_path / "civicaccess-data"))
+
+    try:
+        response = client.get("/api/v1/civicaccess/readiness")
+    finally:
+        main_module._dispose_review_repository()
+        main_module._review_db_url = None
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["status"] == "not-ready"
-    assert payload["ready"] is False
-    assert payload["review_database_configured"] is False
-    assert "Set CIVICACCESS_REVIEW_DB_URL" in payload["blockers"][0]
+    assert payload["status"] == "ready"
+    assert payload["ready"] is True
+    assert payload["review_database_configured"] is True
+    assert payload["schema_ready"] is True
+    assert payload["blockers"] == []
+    assert "civicaccess-reviews.db" in payload["review_database_url"]
 
 
 def test_readiness_passes_with_configured_schema(monkeypatch, tmp_path) -> None:
@@ -144,8 +153,51 @@ def test_review_record_lookup_reports_missing_record(monkeypatch, tmp_path) -> N
     db_path.unlink()
 
 
-def test_review_record_lookup_requires_configured_database() -> None:
-    response = client.get("/api/v1/civicaccess/reviews/not-configured")
+def test_review_record_lookup_uses_default_database(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("CIVICACCESS_REVIEW_DB_URL", raising=False)
+    monkeypatch.setenv("CIVICACCESS_DATA_DIR", str(tmp_path / "default-data"))
 
-    assert response.status_code == 503
-    assert "Set CIVICACCESS_REVIEW_DB_URL" in response.json()["detail"]["fix"]
+    try:
+        response = client.get("/api/v1/civicaccess/reviews/not-configured")
+    finally:
+        main_module._dispose_review_repository()
+        main_module._review_db_url = None
+
+    assert response.status_code == 404
+    assert "Use a review_id returned by POST" in response.json()["detail"]["fix"]
+
+
+def test_review_list_and_records_export_contract(monkeypatch, tmp_path) -> None:
+    db_path = tmp_path / "api-review-list.db"
+    monkeypatch.setenv("CIVICACCESS_REVIEW_DB_URL", f"sqlite:///{db_path}")
+
+    try:
+        create_response = client.post(
+            "/api/v1/civicaccess/review",
+            json={
+                "title": "Budget hearing notice",
+                "body": "Residents may ask for help before the hearing.",
+                "has_alt_text": True,
+                "language": "en",
+            },
+        )
+        review_id = create_response.json()["review_id"]
+        list_response = client.get("/api/v1/civicaccess/reviews")
+        export_response = client.post(f"/api/v1/civicaccess/reviews/{review_id}/records-export")
+        contracts_response = client.get("/api/v1/civicaccess/integration-contracts")
+    finally:
+        main_module._dispose_review_repository()
+        main_module._review_db_url = None
+
+    assert create_response.status_code == 200
+    assert list_response.status_code == 200
+    assert list_response.json()["reviews"][0]["review_id"] == review_id
+    assert export_response.status_code == 200
+    export_payload = export_response.json()
+    assert export_payload["status"] == "records-export-ready"
+    assert export_payload["target_module"] == "civicrecords-ai"
+    assert export_payload["provenance"]["source_text_preserved"] is True
+    contracts = contracts_response.json()
+    assert contracts["status"] == "ok"
+    assert "civicpermit applicant forms" in contracts["downstream_ready_for"]
+    db_path.unlink()

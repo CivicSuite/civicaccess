@@ -34,10 +34,10 @@ def test_root_endpoint_states_runtime_boundary() -> None:
 
     assert payload["name"] == "CivicAccess"
     assert payload["version"] == "0.2.0"
-    assert payload["status"] == "corrective demotion state"
-    assert "database-backed review records" in payload["message"]
+    assert payload["status"] == "standalone readiness candidate"
+    assert "staff interfaces" in payload["message"]
     assert "does not provide legal advice" in payload["message"]
-    assert "verify /ready" in payload["next_step"]
+    assert "/civicaccess/staff" in payload["next_step"]
 
 
 def test_health_endpoint_reports_versions() -> None:

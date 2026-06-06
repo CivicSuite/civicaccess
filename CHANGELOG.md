@@ -6,12 +6,19 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 
 ## [Unreleased]
 
+### Added
+
+- Added default local SQLite review persistence so installed CivicAccess is ready without hidden environment setup.
+- Added `/civicaccess/staff` for saved review queue, readiness, integration contracts, and records-ready export operations.
+- Added `GET /api/v1/civicaccess/reviews`, `POST /api/v1/civicaccess/reviews/{review_id}/records-export`, and `GET /api/v1/civicaccess/integration-contracts`.
+
 ### Changed
 
 - Aligned CivicAccess to the published CivicCore v1.2.0 release wheel and SHA256.
 - Wired the public `/civicaccess` review form to the accessibility review API.
 - Added local schema status and `/ready` readiness gates for review-record persistence.
 - Added bounded request models and actionable validation errors for public API payloads.
+- Changed readiness from environment-gated optional persistence to default local persistence with explicit override support.
 
 ## [0.2.0] - 2026-05-21
 
