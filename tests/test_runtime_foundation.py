@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_package_version_is_020() -> None:
-    assert civicaccess.__version__ == "0.2.0"
+    assert civicaccess.__version__ == "0.3.0"
 
 
 def test_pyproject_uses_published_civiccore_release_wheel() -> None:
@@ -33,7 +33,7 @@ def test_root_endpoint_states_runtime_boundary() -> None:
     payload = response.json()
 
     assert payload["name"] == "CivicAccess"
-    assert payload["version"] == "0.2.0"
+    assert payload["version"] == "0.3.0"
     assert payload["status"] == "standalone readiness candidate"
     assert "staff interfaces" in payload["message"]
     assert "does not provide legal advice" in payload["message"]
@@ -47,5 +47,5 @@ def test_health_endpoint_reports_versions() -> None:
 
     assert payload["status"] == "ok"
     assert payload["service"] == "civicaccess"
-    assert payload["version"] == "0.2.0"
+    assert payload["version"] == "0.3.0"
     assert payload["civiccore_version"] == "1.2.0"

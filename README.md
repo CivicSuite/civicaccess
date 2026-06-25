@@ -2,7 +2,7 @@
 
 CivicAccess is the CivicSuite module for accessibility, plain-language, multilingual, and ADA Title II review-support workflows.
 
-Current state: **v0.2.0 standalone readiness candidate**. This repo contains a FastAPI package aligned to the published CivicCore v1.2.0 release wheel, health/root endpoints, readiness gates, WCAG-aligned review support, local database-backed review records, accessible form planning, accessible publishing workflow checks, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, an API-backed public review UI at `/civicaccess`, and a staff review/export workspace at `/civicaccess/staff`. The previous `v1.0.0` release was published in error and remains historical evidence only.
+Current state: **v0.3.0 standalone readiness candidate**. This repo contains a FastAPI package aligned to the published CivicCore v1.2.0 release wheel, health/root endpoints, readiness gates, WCAG-aligned review support, local database-backed review records, accessible form planning, accessible publishing workflow checks, plain-language rewrites, multilingual draft variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, an API-backed public review UI at `/civicaccess`, and a staff review/export workspace at `/civicaccess/staff`. The previous `v1.0.0` release was published in error and remains historical evidence only.
 
 CivicAccess does **not** provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval. City staff, ADA coordinators, translators, and qualified reviewers remain responsible for publication decisions.
 

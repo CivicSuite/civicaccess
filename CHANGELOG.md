@@ -6,6 +6,8 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-25
+
 ### Added
 
 - Added default local SQLite review persistence so installed CivicAccess is ready without hidden environment setup.

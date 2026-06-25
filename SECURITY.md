@@ -1,6 +1,6 @@
 # Security
 
-CivicAccess version: `0.2.0`.
+CivicAccess version: `0.3.0`.
 
 CivicAccess is self-hosted municipal software. It provides advisory accessibility, plain-language, multilingual draft, and ADA Title II review-support workflows; it does not make legal, certification, translation, or publication decisions.
 
