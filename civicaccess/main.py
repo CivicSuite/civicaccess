@@ -1,18 +1,20 @@
 """FastAPI runtime foundation for CivicAccess."""
 
 import os
+from pathlib import Path
 
 from civiccore import __version__ as CIVICCORE_VERSION
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 from civicaccess import __version__
-from civicaccess.access_review import AccessibilityReviewRepository, StoredAccessibilityReview, review_accessibility
+from civicaccess.access_review import AccessibilityReviewRepository, StoredAccessibilityReview
 from civicaccess.exports import build_accessible_export
 from civicaccess.multilingual import create_language_variant
 from civicaccess.plain_language import rewrite_plain_language
-from civicaccess.public_ui import render_public_lookup_page
+from civicaccess.public_ui import render_public_lookup_page, render_staff_page
 from civicaccess.workflows import (
     build_accessible_form_plan,
     build_ada_title_ii_review_plan,
@@ -32,45 +34,45 @@ _review_db_url: str | None = None
 
 
 class AccessibilityReviewRequest(BaseModel):
-    title: str = ""
-    body: str
+    title: str = Field(default="", max_length=500)
+    body: str = Field(max_length=5000)
     has_alt_text: bool = False
-    language: str = "en"
+    language: str = Field(default="en", min_length=1, max_length=80)
 
 
 class PlainLanguageRequest(BaseModel):
-    text: str
+    text: str = Field(min_length=1, max_length=5000)
 
 
 class LanguageVariantRequest(BaseModel):
-    text: str
-    language: str
+    text: str = Field(min_length=1, max_length=5000)
+    language: str = Field(min_length=1, max_length=80)
 
 
 class AccessibleExportRequest(BaseModel):
-    title: str
-    format: str = "html"
+    title: str = Field(min_length=1, max_length=500)
+    format: str = Field(default="html", min_length=1, max_length=40)
 
 
 class AccessibleFormRequest(BaseModel):
-    form_name: str = ""
-    fields: list[str] = []
+    form_name: str = Field(default="", max_length=500)
+    fields: list[str] = Field(default_factory=list, max_length=100)
 
 
 class PublishingWorkflowRequest(BaseModel):
-    title: str = ""
+    title: str = Field(default="", max_length=500)
     has_review: bool = False
     has_plain_language: bool = False
     has_translation_review: bool = False
 
 
 class AdaTitleIiReviewRequest(BaseModel):
-    service_area: str = ""
+    service_area: str = Field(default="", max_length=500)
     has_coordinator_review: bool = False
 
 
 class TaggedPdfExpectationRequest(BaseModel):
-    heading_levels: list[int] = []
+    heading_levels: list[int] = Field(default_factory=list, max_length=200)
 
 
 @app.get("/")
@@ -80,12 +82,12 @@ def root() -> dict[str, str]:
     return {
         "name": "CivicAccess",
         "version": __version__,
-        "status": "corrective demotion state",
+        "status": "standalone readiness candidate",
         "message": (
-            "CivicAccess is an honest v0.2.0 deterministic scaffold with accessible-form planning, publishing workflow checks, WCAG-aligned review support, optional database-backed review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and a public UI. "
+            "CivicAccess provides local accessibility review support with accessible-form planning, publishing workflow checks, WCAG-aligned review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and API-backed public and staff interfaces. "
             "It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval."
         ),
-        "next_step": "Use CivicAccess for local review support only; do not treat it as finished or public-use ready until a future independent audit signs off against the full CivicSuite Section 2 gate.",
+        "next_step": "Open /civicaccess/staff to review saved publication work and export records-ready packages.",
     }
 
 
@@ -101,6 +103,47 @@ def health() -> dict[str, str]:
     }
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    _request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    fields = sorted(
+        {
+            ".".join(str(part) for part in error.get("loc", [])[1:])
+            for error in exc.errors()
+            if len(error.get("loc", [])) > 1
+        }
+    )
+    field_list = ", ".join(fields) if fields else "request body"
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": {
+                "message": f"CivicAccess could not validate: {field_list}.",
+                "fix": (
+                    "Send a JSON body that includes the required field names listed in "
+                    "the fields array, using strings for text inputs and booleans for yes/no inputs."
+                ),
+                "fields": fields,
+            }
+        },
+    )
+
+
+@app.get("/ready")
+def ready() -> dict[str, object]:
+    """Return public-use readiness for local review-record persistence."""
+
+    return _readiness_payload()
+
+
+@app.get("/api/v1/civicaccess/readiness")
+def readiness() -> dict[str, object]:
+    """Return detailed CivicAccess local persistence readiness for operators."""
+
+    return _readiness_payload()
+
+
 @app.get("/civicaccess", response_class=HTMLResponse)
 def public_civicaccess_page() -> str:
     """Return the accessible public sample UI."""
@@ -108,42 +151,36 @@ def public_civicaccess_page() -> str:
     return render_public_lookup_page()
 
 
+@app.get("/civicaccess/staff", response_class=HTMLResponse)
+def staff_civicaccess_page() -> str:
+    """Return the staff publication review workspace."""
+
+    return render_staff_page()
+
+
 @app.post("/api/v1/civicaccess/review")
 def accessibility_review(request: AccessibilityReviewRequest) -> dict[str, object]:
-    if _review_database_url() is not None:
-        stored = _get_review_repository().create_review(
-            title=request.title,
-            body=request.body,
-            has_alt_text=request.has_alt_text,
-            language=request.language,
-        )
-        return _stored_review_response(stored)
-
-    result = review_accessibility(
+    stored = _get_review_repository().create_review(
         title=request.title,
         body=request.body,
         has_alt_text=request.has_alt_text,
         language=request.language,
     )
+    return _stored_review_response(stored)
+
+
+@app.get("/api/v1/civicaccess/reviews")
+def list_accessibility_reviews(limit: int = 25) -> dict[str, object]:
+    reviews = _get_review_repository().list_reviews(limit=limit)
     return {
-        "status": result.status,
-        "findings": [finding.__dict__ for finding in result.findings],
-        "disclaimer": result.disclaimer,
-        "next_steps": list(result.next_steps),
-        "review_id": None,
+        "status": "ok",
+        "count": len(reviews),
+        "reviews": [_stored_review_summary(review) for review in reviews],
     }
 
 
 @app.get("/api/v1/civicaccess/reviews/{review_id}")
 def get_accessibility_review(review_id: str) -> dict[str, object]:
-    if _review_database_url() is None:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "message": "CivicAccess review persistence is not configured.",
-                "fix": "Set CIVICACCESS_REVIEW_DB_URL to retrieve persisted accessibility review records.",
-            },
-        )
     stored = _get_review_repository().get_review(review_id)
     if stored is None:
         raise HTTPException(
@@ -154,6 +191,69 @@ def get_accessibility_review(review_id: str) -> dict[str, object]:
             },
         )
     return _stored_review_response(stored)
+
+
+@app.post("/api/v1/civicaccess/reviews/{review_id}/records-export")
+def export_accessibility_review_record(review_id: str) -> dict[str, object]:
+    stored = _get_review_repository().get_review(review_id)
+    if stored is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": "Accessibility review record not found.",
+                "fix": "Use a review_id returned by POST /api/v1/civicaccess/review.",
+            },
+        )
+    export = build_accessible_export(title=stored.title or "Untitled accessible publication")
+    return {
+        "status": "records-export-ready",
+        "module": "civicaccess",
+        "target_module": "civicrecords-ai",
+        "review": _stored_review_summary(stored),
+        "export": {
+            "title": export.title,
+            "format": export.format,
+            "checklist": list(export.checklist),
+            "retention_note": export.retention_note,
+            "status": export.status,
+            "fix": export.fix,
+        },
+        "provenance": {
+            "source_text_preserved": True,
+            "findings_preserved": True,
+            "disclaimer_preserved": True,
+            "created_at": stored.created_at.isoformat(),
+        },
+    }
+
+
+@app.get("/api/v1/civicaccess/integration-contracts")
+def integration_contracts() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "module": "civicaccess",
+        "provides": [
+            {
+                "contract": "civicaccess.publication_accessibility_review.v1",
+                "endpoint": "/api/v1/civicaccess/review",
+                "purpose": "Create a persisted accessibility review before publication.",
+            },
+            {
+                "contract": "civicaccess.records_export.v1",
+                "endpoint": "/api/v1/civicaccess/reviews/{review_id}/records-export",
+                "target_module": "civicrecords-ai",
+                "purpose": "Export review provenance and checklist data for records retention.",
+            },
+        ],
+        "downstream_ready_for": [
+            "civiczone public notice text",
+            "civicplan policy summaries",
+            "civicpermit applicant forms",
+            "civicinspect notices",
+            "civicgrants public opportunity notices",
+            "civicprocure RFP and award packets",
+        ],
+    }
 
 
 @app.post("/api/v1/civicaccess/plain-language")
@@ -237,19 +337,43 @@ def accessible_export(request: AccessibleExportRequest) -> dict[str, object]:
 
 
 def _review_database_url() -> str | None:
-    return os.environ.get("CIVICACCESS_REVIEW_DB_URL")
+    configured = os.environ.get("CIVICACCESS_REVIEW_DB_URL")
+    if configured:
+        return configured
+    data_dir = Path(os.environ.get("CIVICACCESS_DATA_DIR", Path.cwd() / "data")).resolve()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{data_dir / 'civicaccess-reviews.db'}"
 
 
 def _get_review_repository() -> AccessibilityReviewRepository:
     global _review_db_url, _review_repository
     db_url = _review_database_url()
-    if db_url is None:
-        raise RuntimeError("CIVICACCESS_REVIEW_DB_URL is not configured.")
     if _review_repository is None or db_url != _review_db_url:
         _dispose_review_repository()
         _review_db_url = db_url
         _review_repository = AccessibilityReviewRepository(db_url=db_url)
     return _review_repository
+
+
+def _readiness_payload() -> dict[str, object]:
+    db_url = _review_database_url()
+    repository = _get_review_repository()
+    schema_status = repository.schema_status()
+    blockers: list[str] = []
+    if not schema_status.ready:
+        blockers.append("Run the local CivicAccess schema status/migration check.")
+    ready_for_public_use = not blockers
+    return {
+        "status": "ready" if ready_for_public_use else "not-ready",
+        "ready": ready_for_public_use,
+        "review_database_configured": True,
+        "review_database_url": db_url,
+        "schema_ready": schema_status.ready,
+        "schema_version": schema_status.schema_version,
+        "expected_schema_version": schema_status.expected_schema_version,
+        "review_count": repository.review_count(),
+        "blockers": blockers,
+    }
 
 
 def _dispose_review_repository() -> None:
@@ -272,5 +396,16 @@ def _stored_review_response(stored: StoredAccessibilityReview) -> dict[str, obje
         ],
         "title": stored.title,
         "language": stored.language,
+        "created_at": stored.created_at.isoformat(),
+    }
+
+
+def _stored_review_summary(stored: StoredAccessibilityReview) -> dict[str, object]:
+    return {
+        "review_id": stored.review_id,
+        "title": stored.title,
+        "language": stored.language,
+        "status": stored.status,
+        "finding_count": len(stored.findings),
         "created_at": stored.created_at.isoformat(),
     }

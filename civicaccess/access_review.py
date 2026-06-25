@@ -49,6 +49,8 @@ DISCLAIMER = (
 
 metadata = sa.MetaData()
 
+SCHEMA_VERSION = "2026-06-05-001"
+
 accessibility_review_records = sa.Table(
     "accessibility_review_records",
     metadata,
@@ -64,6 +66,23 @@ accessibility_review_records = sa.Table(
     schema="civicaccess",
 )
 
+schema_migrations = sa.Table(
+    "schema_migrations",
+    metadata,
+    sa.Column("schema_version", sa.String(40), primary_key=True),
+    sa.Column("applied_at", sa.DateTime(timezone=True), nullable=False),
+    schema="civicaccess",
+)
+
+
+@dataclass(frozen=True)
+class SchemaStatus:
+    schema_version: str | None
+    expected_schema_version: str
+    ready: bool
+    missing_tables: tuple[str, ...]
+    dialect: str
+
 
 class AccessibilityReviewRepository:
     """SQLAlchemy-backed accessibility review records for local publication workflows."""
@@ -76,7 +95,52 @@ class AccessibilityReviewRepository:
             self.engine = base_engine
             with self.engine.begin() as connection:
                 connection.execute(sa.text("CREATE SCHEMA IF NOT EXISTS civicaccess"))
+        self.migrate()
+
+    def migrate(self) -> SchemaStatus:
+        """Apply non-destructive local schema setup and return the resulting status."""
+
         metadata.create_all(self.engine)
+        with self.engine.begin() as connection:
+            exists = connection.execute(
+                sa.select(schema_migrations.c.schema_version).where(
+                    schema_migrations.c.schema_version == SCHEMA_VERSION
+                )
+            ).first()
+            if exists is None:
+                connection.execute(
+                    schema_migrations.insert().values(
+                        schema_version=SCHEMA_VERSION,
+                        applied_at=datetime.now(UTC),
+                    )
+                )
+        return self.schema_status()
+
+    def schema_status(self) -> SchemaStatus:
+        inspector = sa.inspect(self.engine)
+        translated_schema = None if self.engine.dialect.name == "sqlite" else "civicaccess"
+        available_tables = set(inspector.get_table_names(schema=translated_schema))
+        expected_tables = {"accessibility_review_records", "schema_migrations"}
+        missing_tables = tuple(sorted(expected_tables - available_tables))
+        schema_version = None
+        if "schema_migrations" not in missing_tables:
+            with self.engine.begin() as connection:
+                schema_version = connection.execute(
+                    sa.select(schema_migrations.c.schema_version)
+                    .order_by(schema_migrations.c.applied_at.desc())
+                    .limit(1)
+                ).scalar_one_or_none()
+        return SchemaStatus(
+            schema_version=schema_version,
+            expected_schema_version=SCHEMA_VERSION,
+            ready=schema_version == SCHEMA_VERSION and not missing_tables,
+            missing_tables=missing_tables,
+            dialect=self.engine.dialect.name,
+        )
+
+    def review_count(self) -> int:
+        with self.engine.begin() as connection:
+            return connection.execute(sa.select(sa.func.count()).select_from(accessibility_review_records)).scalar_one()
 
     def create_review(
         self, *, title: str, body: str, has_alt_text: bool, language: str
@@ -124,6 +188,16 @@ class AccessibilityReviewRepository:
         if row is None:
             return None
         return _row_to_stored_review(row)
+
+    def list_reviews(self, *, limit: int = 25) -> tuple[StoredAccessibilityReview, ...]:
+        bounded_limit = max(1, min(limit, 100))
+        with self.engine.begin() as connection:
+            rows = connection.execute(
+                sa.select(accessibility_review_records)
+                .order_by(accessibility_review_records.c.created_at.desc())
+                .limit(bounded_limit)
+            ).mappings().all()
+        return tuple(_row_to_stored_review(row) for row in rows)
 
 
 def review_accessibility(*, title: str, body: str, has_alt_text: bool, language: str) -> AccessibilityReview:

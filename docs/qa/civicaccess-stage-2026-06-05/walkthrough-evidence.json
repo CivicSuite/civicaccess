@@ -1,0 +1,108 @@
+{
+  "generated_at": "2026-06-05T22:12:04.872Z",
+  "base": "http://127.0.0.1:18166",
+  "checks": [
+    {
+      "name": "public-desktop",
+      "status": 200,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "focused": "Skip to main content",
+      "heading": "Needs fixes",
+      "itemCount": 1,
+      "resultText": "Needs fixes\n\nResolve these items before staff publication approval.\n\nAdd concise alt text that explains the purpose of the visual, or mark decorative images as decorative.",
+      "overflow": false,
+      "consoleMessages": [],
+      "requestFailures": [],
+      "screenshot": "C:/dev/Claude/civicaccess/docs/qa/civicaccess-stage-2026-06-05/public-desktop.png"
+    },
+    {
+      "name": "public-mobile",
+      "status": 200,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "focused": "Skip to main content",
+      "heading": "Needs fixes",
+      "itemCount": 1,
+      "resultText": "Needs fixes\n\nResolve these items before staff publication approval.\n\nAdd concise alt text that explains the purpose of the visual, or mark decorative images as decorative.",
+      "overflow": false,
+      "consoleMessages": [],
+      "requestFailures": [],
+      "screenshot": "C:/dev/Claude/civicaccess/docs/qa/civicaccess-stage-2026-06-05/public-mobile.png"
+    },
+    {
+      "name": "api-/",
+      "status": 200,
+      "body": "{\"name\":\"CivicAccess\",\"version\":\"0.2.0\",\"status\":\"corrective demotion state\",\"message\":\"CivicAccess is an honest v0.2.0 deterministic scaffold with accessible-form planning, publishing workflow checks, WCAG-aligned review support, optional database-backed review records, plain-language rewrites, multilingual sample variants, ADA Title II review-support packages, tagged-PDF expectations, records-ready export checklists, and an API-backed public review UI. It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval.\",\"next_step\":\"Configure CIVICACCESS_REVIEW_DB_URL and verify /ready before public use.\"}"
+    },
+    {
+      "name": "api-/health",
+      "status": 200,
+      "body": "{\"status\":\"ok\",\"service\":\"civicaccess\",\"version\":\"0.2.0\",\"civiccore_version\":\"1.2.0\"}"
+    },
+    {
+      "name": "api-/ready",
+      "status": 200,
+      "body": "{\"status\":\"not-ready\",\"ready\":false,\"review_database_configured\":false,\"schema_ready\":false,\"schema_version\":null,\"expected_schema_version\":null,\"review_count\":0,\"blockers\":[\"Set CIVICACCESS_REVIEW_DB_URL to a local review-record database.\"]}"
+    },
+    {
+      "name": "api-/api/v1/civicaccess/readiness",
+      "status": 200,
+      "body": "{\"status\":\"not-ready\",\"ready\":false,\"review_database_configured\":false,\"schema_ready\":false,\"schema_version\":null,\"expected_schema_version\":null,\"review_count\":0,\"blockers\":[\"Set CIVICACCESS_REVIEW_DB_URL to a local review-record database.\"]}"
+    },
+    {
+      "name": "api-review-empty-content",
+      "status": 200,
+      "body": {
+        "status": "needs-fixes",
+        "findings": [
+          {
+            "code": "missing-body",
+            "severity": "high",
+            "message": "The public text is empty.",
+            "fix": "Add the resident-facing text before running an accessibility review.",
+            "wcag_reference": "WCAG 3.1.5 Reading Level"
+          },
+          {
+            "code": "missing-title",
+            "severity": "high",
+            "message": "The document needs a descriptive title.",
+            "fix": "Add a short title that names the service, deadline, or public action.",
+            "wcag_reference": "WCAG 2.4.2 Page Titled"
+          },
+          {
+            "code": "missing-alt-text",
+            "severity": "high",
+            "message": "At least one image or visual element is missing alternative text.",
+            "fix": "Add concise alt text that explains the purpose of the visual, or mark decorative images as decorative.",
+            "wcag_reference": "WCAG 1.1.1 Non-text Content"
+          }
+        ],
+        "disclaimer": "Accessibility review is advisory support only; it does not replace legal review, a certified accessibility audit, or an ADA coordinator's decision.",
+        "next_steps": [
+          "Resolve each high-severity finding before publication.",
+          "Have staff or an ADA coordinator review the final publication decision.",
+          "Preserve the review record with the source content and publication package."
+        ],
+        "review_id": null
+      }
+    },
+    {
+      "name": "api-review-invalid",
+      "status": 422,
+      "body": {
+        "detail": {
+          "message": "CivicAccess could not validate: body.",
+          "fix": "Send a JSON body that includes the required field names listed in the fields array, using strings for text inputs and booleans for yes/no inputs.",
+          "fields": [
+            "body"
+          ]
+        }
+      }
+    }
+  ]
+}

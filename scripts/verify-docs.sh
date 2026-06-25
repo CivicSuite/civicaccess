@@ -29,6 +29,7 @@ required=(
   "civicaccess/__init__.py"
   "civicaccess/main.py"
   "civicaccess/access_review.py"
+  "civicaccess/db_admin.py"
   "civicaccess/plain_language.py"
   "civicaccess/multilingual.py"
   "civicaccess/exports.py"
