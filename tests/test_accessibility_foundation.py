@@ -75,6 +75,7 @@ def test_api_review_success_shape() -> None:
     response = client.post(
         "/api/v1/civicaccess/review",
         json={"title": "", "body": "A public notice.", "has_alt_text": False, "language": "en"},
+        headers={"X-CivicAccess-Write-Token": "test-write-token"},
     )
 
     assert response.status_code == 200
@@ -83,6 +84,21 @@ def test_api_review_success_shape() -> None:
     assert payload["findings"][0]["fix"]
     assert payload["next_steps"]
     assert payload["review_id"]
+
+
+def test_api_analyze_is_public_and_stateless() -> None:
+    response = client.post(
+        "/api/v1/civicaccess/analyze",
+        json={"title": "", "body": "A public notice.", "has_alt_text": False, "language": "en"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "needs-fixes"
+    assert payload["findings"][0]["fix"]
+    assert payload["next_steps"]
+    assert payload["persisted"] is False
+    assert "review_id" not in payload
 
 
 def test_api_review_validation_is_actionable() -> None:
@@ -147,7 +163,7 @@ def test_api_public_use_workflow_routes() -> None:
 
 def test_adversarial_inputs_are_actionable_and_non_certifying() -> None:
     empty_review = client.post(
-        "/api/v1/civicaccess/review",
+        "/api/v1/civicaccess/analyze",
         json={"title": "", "body": "", "has_alt_text": False, "language": "en"},
     )
     unsupported_language = client.post(
@@ -180,9 +196,9 @@ def test_public_ui_route_is_accessible_and_honest() -> None:
     text = response.text
     assert '<a class="skip-link" href="#main">Skip to main content</a>' in text
     assert '<main id="main" tabindex="-1">' in text
-    assert "v0.3.0 standalone readiness candidate" in text
+    assert "v0.4.0 standalone readiness candidate" in text
     assert 'id="runReview"' in text
-    assert 'fetch("/api/v1/civicaccess/review"' in text
+    assert 'fetch("/api/v1/civicaccess/analyze"' in text
     assert "result.replaceChildren()" in text
     assert "result.innerHTML" not in text
     assert "Show empty state" not in text
@@ -206,4 +222,6 @@ def test_staff_ui_route_is_api_wired_and_contract_aware() -> None:
     assert 'fetch("/api/v1/civicaccess/integration-contracts")' in text
     assert 'fetch("/api/v1/civicaccess/reviews")' in text
     assert 'records-export' in text
+    assert "X-CivicAccess-Write-Token" in text
+    assert "window.CIVICACCESS_WRITE_TOKEN" in text
     assert "result.innerHTML" not in text

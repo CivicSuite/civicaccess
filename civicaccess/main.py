@@ -4,13 +4,17 @@ import os
 from pathlib import Path
 
 from civiccore import __version__ as CIVICCORE_VERSION
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from civicaccess import __version__
-from civicaccess.access_review import AccessibilityReviewRepository, StoredAccessibilityReview
+from civicaccess.access_review import (
+    AccessibilityReviewRepository,
+    StoredAccessibilityReview,
+    review_accessibility,
+)
 from civicaccess.exports import build_accessible_export
 from civicaccess.multilingual import create_language_variant
 from civicaccess.plain_language import rewrite_plain_language
@@ -155,11 +159,34 @@ def public_civicaccess_page() -> str:
 def staff_civicaccess_page() -> str:
     """Return the staff publication review workspace."""
 
-    return render_staff_page()
+    return render_staff_page(write_token=_trusted_write_token())
+
+
+@app.post("/api/v1/civicaccess/analyze")
+def analyze_accessibility(request: AccessibilityReviewRequest) -> dict[str, object]:
+    """Stateless public accessibility analysis. No persistence, no token required."""
+
+    review = review_accessibility(
+        title=request.title,
+        body=request.body,
+        has_alt_text=request.has_alt_text,
+        language=request.language,
+    )
+    return {
+        "status": review.status,
+        "findings": [finding.__dict__ for finding in review.findings],
+        "disclaimer": review.disclaimer,
+        "next_steps": list(review.next_steps),
+        "persisted": False,
+    }
 
 
 @app.post("/api/v1/civicaccess/review")
-def accessibility_review(request: AccessibilityReviewRequest) -> dict[str, object]:
+def accessibility_review(
+    request: AccessibilityReviewRequest,
+    x_civicaccess_write_token: str | None = Header(default=None),
+) -> dict[str, object]:
+    _authorize_persistent_write(x_civicaccess_write_token)
     stored = _get_review_repository().create_review(
         title=request.title,
         body=request.body,
@@ -194,8 +221,13 @@ def get_accessibility_review(review_id: str) -> dict[str, object]:
 
 
 @app.post("/api/v1/civicaccess/reviews/{review_id}/records-export")
-def export_accessibility_review_record(review_id: str) -> dict[str, object]:
-    stored = _get_review_repository().get_review(review_id)
+def export_accessibility_review_record(
+    review_id: str,
+    x_civicaccess_write_token: str | None = Header(default=None),
+) -> dict[str, object]:
+    _authorize_persistent_write(x_civicaccess_write_token)
+    repository = _get_review_repository()
+    stored = repository.get_review(review_id)
     if stored is None:
         raise HTTPException(
             status_code=404,
@@ -205,6 +237,7 @@ def export_accessibility_review_record(review_id: str) -> dict[str, object]:
             },
         )
     export = build_accessible_export(title=stored.title or "Untitled accessible publication")
+    repository.record_audit_event(action="review.records_export", subject_id=review_id)
     return {
         "status": "records-export-ready",
         "module": "civicaccess",
@@ -336,10 +369,51 @@ def accessible_export(request: AccessibleExportRequest) -> dict[str, object]:
     }
 
 
+def _trusted_write_token() -> str | None:
+    return os.environ.get("CIVICACCESS_TRUSTED_WRITE_TOKEN")
+
+
+def _authorize_persistent_write(provided_token: str | None) -> None:
+    expected_token = _trusted_write_token()
+    if not expected_token:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "CivicAccess durable write guard is not configured.",
+                "fix": "Set CIVICACCESS_TRUSTED_WRITE_TOKEN before enabling persistence-backed writes.",
+            },
+        )
+    if provided_token != expected_token:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "message": "CivicAccess durable write token is missing or invalid.",
+                "fix": "Send the configured X-CivicAccess-Write-Token header for persistence-backed writes.",
+            },
+        )
+
+
+def _sync_database_url(url: str) -> str:
+    """Convert the supervisor's async DATABASE_URL to a sync psycopg2 URL (SQLite passes through)."""
+
+    return (
+        url.replace("postgresql+asyncpg", "postgresql+psycopg2")
+        .replace("postgres+asyncpg", "postgresql+psycopg2")
+        .replace("postgresql://", "postgresql+psycopg2://", 1)
+        .replace("postgres://", "postgresql+psycopg2://", 1)
+    )
+
+
 def _review_database_url() -> str | None:
+    # Explicit per-module override wins (dev SQLite or a pre-built Postgres URL).
     configured = os.environ.get("CIVICACCESS_REVIEW_DB_URL")
     if configured:
-        return configured
+        return _sync_database_url(configured)
+    # Default to the shared CivicCore Postgres the desktop supervisor injects.
+    supervisor_url = os.environ.get("DATABASE_URL")
+    if supervisor_url:
+        return _sync_database_url(supervisor_url)
+    # ponytail: SQLite is the explicit dev fallback only when no shared Postgres is configured.
     data_dir = Path(os.environ.get("CIVICACCESS_DATA_DIR", Path.cwd() / "data")).resolve()
     data_dir.mkdir(parents=True, exist_ok=True)
     return f"sqlite:///{data_dir / 'civicaccess-reviews.db'}"

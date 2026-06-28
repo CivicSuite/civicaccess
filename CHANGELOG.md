@@ -6,6 +6,25 @@ The format follows Keep a Changelog, and this project follows Semantic Versionin
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-28
+
+City-core hardening: closes probe gaps #2 (authz), #3 (audit), and #4 (backup/restore), and makes the shared CivicCore PostgreSQL the default review store.
+
+### Added
+
+- Added a trusted-write guard: persistent writes (`POST /api/v1/civicaccess/review`, `POST /api/v1/civicaccess/reviews/{id}/records-export`) now require the `CIVICACCESS_TRUSTED_WRITE_TOKEN` server secret, sent as the `X-CivicAccess-Write-Token` header. Missing/invalid token returns 403; unconfigured guard fails closed with 503. (Probe gap #2.)
+- Added `POST /api/v1/civicaccess/analyze`: a stateless, public, no-persistence accessibility check. The public `/civicaccess` surface now uses it, so public users can no longer write city records.
+- Added a persisted `audit_events` table and module audit events on writes/exports (`review.create`, `review.records_export`), written in the same transaction as the review. (Probe gap #3.)
+- Added a backup/restore round-trip test proving review + audit data survive a Data-directory backup and restore. (Probe gap #4.)
+- Added a mandatory PostgreSQL release gate: `verify-release.sh` and CI require `CIVICACCESS_POSTGRES_TEST_URL` so PostgreSQL persistence coverage cannot be skipped, plus `tests/test_postgres_persistence.py`.
+
+### Changed
+
+- Defaulted the review store to the shared CivicCore PostgreSQL: the module reads the supervisor's `DATABASE_URL` (asyncpg) and derives a sync psycopg2 URL. `CIVICACCESS_REVIEW_DB_URL` still overrides; SQLite is now an explicit dev fallback rather than the default.
+- Moved `psycopg2-binary` from dev/optional dependencies to a runtime dependency so the PostgreSQL default works out of the box.
+- Renamed the schema migration id to `civicaccess-windows-local-state-v1` to match the CivicCore Windows Local module convention.
+- Staff `/civicaccess/staff` surface now sends the trusted-write token on save and export.
+
 ## [0.3.0] - 2026-06-25
 
 ### Added

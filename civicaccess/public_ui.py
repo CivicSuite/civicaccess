@@ -1,6 +1,8 @@
-"""Public UI for CivicAccess v0.3.0."""
+"""Public UI for CivicAccess."""
 
 from __future__ import annotations
+
+import json
 
 
 def render_public_lookup_page() -> str:
@@ -53,7 +55,7 @@ def render_public_lookup_page() -> str:
   <p class="eyebrow">CivicSuite / CivicAccess</p>
   <h1>Make public information easier to read, reach, and preserve.</h1>
   <p class="lede">CivicAccess gives staff a deterministic review path for accessible forms, public notices, plain-language rewrites, multilingual samples, ADA Title II review support, tagged-PDF expectations, and municipal-record exports.</p>
-  <p><span class="badge">v0.3.0 standalone readiness candidate</span></p>
+  <p><span class="badge">v0.4.0 standalone readiness candidate</span></p>
 </header>
 <main id="main" tabindex="-1">
   <section class="grid" aria-labelledby="review-title">
@@ -146,7 +148,7 @@ def render_public_lookup_page() -> str:
     setResult("pending", "Loading review", "Checking the notice text and publication fields.", []);
     runReview.disabled = true;
     try {
-      const response = await fetch("/api/v1/civicaccess/review", {
+      const response = await fetch("/api/v1/civicaccess/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -181,15 +183,21 @@ def render_public_lookup_page() -> str:
 """
 
 
-def render_staff_page() -> str:
+def render_staff_page(write_token: str | None = None) -> str:
     """Render the staff review workspace for saved CivicAccess work."""
 
-    return """<!DOCTYPE html>
+    token_script = (
+        "<script>window.CIVICACCESS_WRITE_TOKEN = "
+        + json.dumps(write_token or "")
+        + ";</script>"
+    )
+    return ("""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CivicAccess Staff Workspace</title>
+<!--WRITE_TOKEN-->
 <style>
   :root { --ink:#17202a; --muted:#56606a; --paper:#fffdf7; --blue:#175b83; --green:#2f6b50; --gold:#d8b45b; --line:#d7c8a8; --danger:#9a3d2f; }
   * { box-sizing: border-box; }
@@ -318,7 +326,15 @@ def render_staff_page() -> str:
   }
 
   async function exportReview(reviewId) {
-    const payload = await (await fetch(`/api/v1/civicaccess/reviews/${reviewId}/records-export`, { method: "POST" })).json();
+    const response = await fetch(`/api/v1/civicaccess/reviews/${reviewId}/records-export`, {
+      method: "POST",
+      headers: { "X-CivicAccess-Write-Token": window.CIVICACCESS_WRITE_TOKEN || "" },
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      replaceWithText(exportResult, "Records export unavailable", payload.detail?.message || "Staff write token is missing or invalid.", true);
+      return;
+    }
     replaceWithText(exportResult, "Records export ready", `${payload.target_module}: ${payload.export.status}. ${payload.export.retention_note}`);
   }
 
@@ -327,7 +343,10 @@ def render_staff_page() -> str:
     try {
       const response = await fetch("/api/v1/civicaccess/review", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CivicAccess-Write-Token": window.CIVICACCESS_WRITE_TOKEN || "",
+        },
         body: JSON.stringify({ title: title.value, body: body.value, has_alt_text: altText.checked, language: "en" }),
       });
       const payload = await response.json();
@@ -347,4 +366,4 @@ def render_staff_page() -> str:
 </script>
 </body>
 </html>
-"""
+""").replace("<!--WRITE_TOKEN-->", token_script)
