@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 
 def render_public_lookup_page() -> str:
     """Render the accessible public-facing CivicAccess review page."""
@@ -183,21 +181,19 @@ def render_public_lookup_page() -> str:
 """
 
 
-def render_staff_page(write_token: str | None = None) -> str:
-    """Render the staff review workspace for saved CivicAccess work."""
+def render_staff_page() -> str:
+    """Render the staff review workspace for saved CivicAccess work.
 
-    token_script = (
-        "<script>window.CIVICACCESS_WRITE_TOKEN = "
-        + json.dumps(write_token or "")
-        + ";</script>"
-    )
-    return ("""<!DOCTYPE html>
+    The page never embeds the server write token. Staff paste it into a field; it is kept in
+    sessionStorage and sent as the X-CivicAccess-Write-Token header on save/export only.
+    """
+
+    return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CivicAccess Staff Workspace</title>
-<!--WRITE_TOKEN-->
 <style>
   :root { --ink:#17202a; --muted:#56606a; --paper:#fffdf7; --blue:#175b83; --green:#2f6b50; --gold:#d8b45b; --line:#d7c8a8; --danger:#9a3d2f; }
   * { box-sizing: border-box; }
@@ -248,9 +244,11 @@ def render_staff_page(write_token: str | None = None) -> str:
       <label for="body">Publication text</label>
       <textarea id="body" rows="6">Residents may request an accommodation before the meeting.</textarea>
       <label><input id="altText" type="checkbox" style="width:auto"> Images already have alt text</label>
+      <label for="writeToken">Staff write token</label>
+      <input id="writeToken" type="password" autocomplete="off" placeholder="Paste the CivicAccess write token to save or export">
       <button id="createReview" type="button">Save review</button>
       <div id="createStatus" class="result" role="status" aria-live="polite">
-        <p>Saved reviews appear in the staff queue and can be exported for records retention.</p>
+        <p>Saving and exporting require the staff write token. Paste it above; it stays in this browser session only.</p>
       </div>
     </article>
     <article class="panel">
@@ -271,8 +269,17 @@ def render_staff_page(write_token: str | None = None) -> str:
   const title = document.getElementById("title");
   const body = document.getElementById("body");
   const altText = document.getElementById("altText");
+  const writeToken = document.getElementById("writeToken");
   const createReview = document.getElementById("createReview");
   const createStatus = document.getElementById("createStatus");
+
+  const savedToken = sessionStorage.getItem("civicaccessWriteToken");
+  if (savedToken) writeToken.value = savedToken;
+  function currentToken() {
+    const value = writeToken.value.trim();
+    if (value) sessionStorage.setItem("civicaccessWriteToken", value);
+    return value;
+  }
   const readiness = document.getElementById("readiness");
   const contracts = document.getElementById("contracts");
   const reviews = document.getElementById("reviews");
@@ -328,7 +335,7 @@ def render_staff_page(write_token: str | None = None) -> str:
   async function exportReview(reviewId) {
     const response = await fetch(`/api/v1/civicaccess/reviews/${reviewId}/records-export`, {
       method: "POST",
-      headers: { "X-CivicAccess-Write-Token": window.CIVICACCESS_WRITE_TOKEN || "" },
+      headers: { "X-CivicAccess-Write-Token": currentToken() },
     });
     const payload = await response.json();
     if (!response.ok) {
@@ -345,7 +352,7 @@ def render_staff_page(write_token: str | None = None) -> str:
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CivicAccess-Write-Token": window.CIVICACCESS_WRITE_TOKEN || "",
+          "X-CivicAccess-Write-Token": currentToken(),
         },
         body: JSON.stringify({ title: title.value, body: body.value, has_alt_text: altText.checked, language: "en" }),
       });
@@ -366,4 +373,4 @@ def render_staff_page(write_token: str | None = None) -> str:
 </script>
 </body>
 </html>
-""").replace("<!--WRITE_TOKEN-->", token_script)
+"""

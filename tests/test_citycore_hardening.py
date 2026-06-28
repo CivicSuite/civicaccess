@@ -120,17 +120,23 @@ def test_audit_event_persisted_on_records_export(monkeypatch, tmp_path) -> None:
 # --- probe gap #4: data survives a backup -> restore round-trip ------------------------------------
 
 def test_backup_restore_roundtrip_preserves_records_and_audit(tmp_path) -> None:
+    """SQLite dev-fallback durability: back up the live Data dir, lose it, restore, reload.
+
+    The Postgres default store's durability is proven separately in
+    tests/test_postgres_persistence.py::test_postgres_review_and_audit_survive_reconnect.
+    """
+
     db_path = tmp_path / "data" / "civicaccess-reviews.db"
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     repository = AccessibilityReviewRepository(db_url=f"sqlite:///{db_path}")
     stored = repository.create_review(title="Hearing", body="text", has_alt_text=True, language="en")
-    repository.engine.dispose()
 
-    # Supervisor backup = recursive file copy of the Data dir; mirror it for the module's file state.
+    # Supervisor backup = recursive file copy of the Data dir, taken while the service is live.
     backup_path = tmp_path / "backup" / "civicaccess-reviews.db"
     backup_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(db_path, backup_path)
+    repository.engine.dispose()
 
     # Lose the live data, then restore from the backup copy.
     db_path.unlink()

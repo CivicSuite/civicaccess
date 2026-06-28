@@ -1,5 +1,6 @@
 """FastAPI runtime foundation for CivicAccess."""
 
+import hmac
 import os
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy.engine import make_url
 
 from civicaccess import __version__
 from civicaccess.access_review import (
@@ -157,9 +159,12 @@ def public_civicaccess_page() -> str:
 
 @app.get("/civicaccess/staff", response_class=HTMLResponse)
 def staff_civicaccess_page() -> str:
-    """Return the staff publication review workspace."""
+    """Return the staff publication review workspace.
 
-    return render_staff_page(write_token=_trusted_write_token())
+    The page never embeds the server write token; the operator supplies it in the UI.
+    """
+
+    return render_staff_page()
 
 
 @app.post("/api/v1/civicaccess/analyze")
@@ -383,7 +388,7 @@ def _authorize_persistent_write(provided_token: str | None) -> None:
                 "fix": "Set CIVICACCESS_TRUSTED_WRITE_TOKEN before enabling persistence-backed writes.",
             },
         )
-    if provided_token != expected_token:
+    if not hmac.compare_digest(provided_token or "", expected_token):
         raise HTTPException(
             status_code=403,
             detail={
@@ -394,14 +399,18 @@ def _authorize_persistent_write(provided_token: str | None) -> None:
 
 
 def _sync_database_url(url: str) -> str:
-    """Convert the supervisor's async DATABASE_URL to a sync psycopg2 URL (SQLite passes through)."""
+    """Convert the supervisor's async DATABASE_URL to a sync psycopg2 URL (non-postgres passes through).
 
-    return (
-        url.replace("postgresql+asyncpg", "postgresql+psycopg2")
-        .replace("postgres+asyncpg", "postgresql+psycopg2")
-        .replace("postgresql://", "postgresql+psycopg2://", 1)
-        .replace("postgres://", "postgresql+psycopg2://", 1)
-    )
+    Rewrites only the scheme so passwords/db names containing scheme-marker substrings survive.
+    """
+
+    try:
+        parsed = make_url(url)
+    except Exception:
+        return url
+    if parsed.drivername.startswith(("postgresql", "postgres")):
+        return parsed.set(drivername="postgresql+psycopg2").render_as_string(hide_password=False)
+    return url
 
 
 def _review_database_url() -> str | None:

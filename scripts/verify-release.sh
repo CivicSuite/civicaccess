@@ -58,6 +58,10 @@ for path in [
     text = (root / path).read_text(encoding="utf-8")
     assert version in text, f"missing release version in {path}"
     assert "0.1.0.dev0" not in text, f"stale dev version in {path}"
+for source in sorted((root / "civicaccess").glob("*.py")):
+    assert "v1.0.0" not in source.read_text(encoding="utf-8"), (
+        f"discredited v1.0.0 label in {source.as_posix()} (the false release; do not reintroduce)"
+    )
 print("PASS: version surfaces synchronized")
 PY
 

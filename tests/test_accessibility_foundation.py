@@ -223,5 +223,15 @@ def test_staff_ui_route_is_api_wired_and_contract_aware() -> None:
     assert 'fetch("/api/v1/civicaccess/reviews")' in text
     assert 'records-export' in text
     assert "X-CivicAccess-Write-Token" in text
-    assert "window.CIVICACCESS_WRITE_TOKEN" in text
+    assert 'id="writeToken"' in text
+    assert "currentToken()" in text
     assert "result.innerHTML" not in text
+
+
+def test_staff_page_never_leaks_the_write_token(monkeypatch) -> None:
+    monkeypatch.setenv("CIVICACCESS_TRUSTED_WRITE_TOKEN", "super-secret-sentinel-do-not-leak")
+    response = client.get("/civicaccess/staff")
+
+    assert response.status_code == 200
+    # The server secret must never appear in HTML served from an unauthenticated GET.
+    assert "super-secret-sentinel-do-not-leak" not in response.text
