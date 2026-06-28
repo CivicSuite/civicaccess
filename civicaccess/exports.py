@@ -1,4 +1,4 @@
-"""Records-ready accessibility export helpers for CivicAccess v1.0.0."""
+"""Records-ready accessibility export helpers for CivicAccess."""
 
 from __future__ import annotations
 

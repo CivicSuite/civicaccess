@@ -1,4 +1,4 @@
-"""Public UI for CivicAccess v0.3.0."""
+"""Public UI for CivicAccess."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def render_public_lookup_page() -> str:
   <p class="eyebrow">CivicSuite / CivicAccess</p>
   <h1>Make public information easier to read, reach, and preserve.</h1>
   <p class="lede">CivicAccess gives staff a deterministic review path for accessible forms, public notices, plain-language rewrites, multilingual samples, ADA Title II review support, tagged-PDF expectations, and municipal-record exports.</p>
-  <p><span class="badge">v0.3.0 standalone readiness candidate</span></p>
+  <p><span class="badge">v0.4.0 standalone readiness candidate</span></p>
 </header>
 <main id="main" tabindex="-1">
   <section class="grid" aria-labelledby="review-title">
@@ -146,7 +146,7 @@ def render_public_lookup_page() -> str:
     setResult("pending", "Loading review", "Checking the notice text and publication fields.", []);
     runReview.disabled = true;
     try {
-      const response = await fetch("/api/v1/civicaccess/review", {
+      const response = await fetch("/api/v1/civicaccess/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,7 +182,11 @@ def render_public_lookup_page() -> str:
 
 
 def render_staff_page() -> str:
-    """Render the staff review workspace for saved CivicAccess work."""
+    """Render the staff review workspace for saved CivicAccess work.
+
+    The page never embeds the server write token. Staff paste it into a field; it is kept in
+    sessionStorage and sent as the X-CivicAccess-Write-Token header on save/export only.
+    """
 
     return """<!DOCTYPE html>
 <html lang="en">
@@ -240,9 +244,11 @@ def render_staff_page() -> str:
       <label for="body">Publication text</label>
       <textarea id="body" rows="6">Residents may request an accommodation before the meeting.</textarea>
       <label><input id="altText" type="checkbox" style="width:auto"> Images already have alt text</label>
+      <label for="writeToken">Staff write token</label>
+      <input id="writeToken" type="password" autocomplete="off" placeholder="Paste the CivicAccess write token to save or export">
       <button id="createReview" type="button">Save review</button>
       <div id="createStatus" class="result" role="status" aria-live="polite">
-        <p>Saved reviews appear in the staff queue and can be exported for records retention.</p>
+        <p>Saving and exporting require the staff write token. Paste it above; it stays in this browser session only.</p>
       </div>
     </article>
     <article class="panel">
@@ -263,8 +269,17 @@ def render_staff_page() -> str:
   const title = document.getElementById("title");
   const body = document.getElementById("body");
   const altText = document.getElementById("altText");
+  const writeToken = document.getElementById("writeToken");
   const createReview = document.getElementById("createReview");
   const createStatus = document.getElementById("createStatus");
+
+  const savedToken = sessionStorage.getItem("civicaccessWriteToken");
+  if (savedToken) writeToken.value = savedToken;
+  function currentToken() {
+    const value = writeToken.value.trim();
+    if (value) sessionStorage.setItem("civicaccessWriteToken", value);
+    return value;
+  }
   const readiness = document.getElementById("readiness");
   const contracts = document.getElementById("contracts");
   const reviews = document.getElementById("reviews");
@@ -318,7 +333,15 @@ def render_staff_page() -> str:
   }
 
   async function exportReview(reviewId) {
-    const payload = await (await fetch(`/api/v1/civicaccess/reviews/${reviewId}/records-export`, { method: "POST" })).json();
+    const response = await fetch(`/api/v1/civicaccess/reviews/${reviewId}/records-export`, {
+      method: "POST",
+      headers: { "X-CivicAccess-Write-Token": currentToken() },
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      replaceWithText(exportResult, "Records export unavailable", payload.detail?.message || "Staff write token is missing or invalid.", true);
+      return;
+    }
     replaceWithText(exportResult, "Records export ready", `${payload.target_module}: ${payload.export.status}. ${payload.export.retention_note}`);
   }
 
@@ -327,7 +350,10 @@ def render_staff_page() -> str:
     try {
       const response = await fetch("/api/v1/civicaccess/review", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CivicAccess-Write-Token": currentToken(),
+        },
         body: JSON.stringify({ title: title.value, body: body.value, has_alt_text: altText.checked, language: "en" }),
       });
       const payload = await response.json();

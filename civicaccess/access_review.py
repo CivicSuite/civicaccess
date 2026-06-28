@@ -1,4 +1,4 @@
-"""Deterministic accessibility review helpers for CivicAccess v1.0.0."""
+"""Deterministic accessibility review helpers for CivicAccess."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ DISCLAIMER = (
 
 metadata = sa.MetaData()
 
-SCHEMA_VERSION = "2026-06-05-001"
+SCHEMA_VERSION = "civicaccess-windows-local-state-v1"
 
 accessibility_review_records = sa.Table(
     "accessibility_review_records",
@@ -62,6 +62,17 @@ accessibility_review_records = sa.Table(
     sa.Column("status", sa.String(80), nullable=False),
     sa.Column("findings", sa.JSON(), nullable=False),
     sa.Column("disclaimer", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+    schema="civicaccess",
+)
+
+audit_events = sa.Table(
+    "audit_events",
+    metadata,
+    sa.Column("event_id", sa.String(36), primary_key=True),
+    sa.Column("action", sa.String(80), nullable=False),
+    sa.Column("subject_id", sa.String(80), nullable=True),
+    sa.Column("actor", sa.String(120), nullable=False),
     sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     schema="civicaccess",
 )
@@ -120,7 +131,7 @@ class AccessibilityReviewRepository:
         inspector = sa.inspect(self.engine)
         translated_schema = None if self.engine.dialect.name == "sqlite" else "civicaccess"
         available_tables = set(inspector.get_table_names(schema=translated_schema))
-        expected_tables = {"accessibility_review_records", "schema_migrations"}
+        expected_tables = {"accessibility_review_records", "audit_events", "schema_migrations"}
         missing_tables = tuple(sorted(expected_tables - available_tables))
         schema_version = None
         if "schema_migrations" not in missing_tables:
@@ -143,7 +154,7 @@ class AccessibilityReviewRepository:
             return connection.execute(sa.select(sa.func.count()).select_from(accessibility_review_records)).scalar_one()
 
     def create_review(
-        self, *, title: str, body: str, has_alt_text: bool, language: str
+        self, *, title: str, body: str, has_alt_text: bool, language: str, actor: str = "staff"
     ) -> StoredAccessibilityReview:
         review = review_accessibility(
             title=title,
@@ -176,7 +187,49 @@ class AccessibilityReviewRepository:
                     created_at=stored.created_at,
                 )
             )
+            # Audit the write in the same transaction so the trail cannot drift from the record.
+            self.record_audit_event(
+                action="review.create",
+                subject_id=stored.review_id,
+                actor=actor,
+                connection=connection,
+            )
         return stored
+
+    def record_audit_event(
+        self,
+        *,
+        action: str,
+        subject_id: str | None = None,
+        actor: str = "staff",
+        connection: object | None = None,
+    ) -> str:
+        """Persist a who/what/when audit row for a write or export action."""
+
+        event_id = str(uuid4())
+        statement = audit_events.insert().values(
+            event_id=event_id,
+            action=action,
+            subject_id=subject_id,
+            actor=actor,
+            created_at=datetime.now(UTC),
+        )
+        if connection is not None:
+            connection.execute(statement)
+        else:
+            with self.engine.begin() as own_connection:
+                own_connection.execute(statement)
+        return event_id
+
+    def list_audit_events(self, *, limit: int = 50) -> tuple[dict[str, object], ...]:
+        bounded_limit = max(1, min(limit, 200))
+        with self.engine.begin() as connection:
+            rows = connection.execute(
+                sa.select(audit_events)
+                .order_by(audit_events.c.created_at.desc())
+                .limit(bounded_limit)
+            ).mappings().all()
+        return tuple(dict(row) for row in rows)
 
     def get_review(self, review_id: str) -> StoredAccessibilityReview | None:
         with self.engine.begin() as connection:

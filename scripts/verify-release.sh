@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 
 find_python() {
   local candidates=()
@@ -40,7 +40,7 @@ ${PYTHON_BIN} - <<'PY'
 from pathlib import Path
 import tomllib
 
-version = "0.3.0"
+version = "0.4.0"
 root = Path(".")
 pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
 assert pyproject["project"]["version"] == version, pyproject["project"]["version"]
@@ -56,12 +56,27 @@ for path in [
     "SECURITY.md",
 ]:
     text = (root / path).read_text(encoding="utf-8")
-    assert "0.3.0" in text, f"missing release version in {path}"
+    assert version in text, f"missing release version in {path}"
     assert "0.1.0.dev0" not in text, f"stale dev version in {path}"
+for source in sorted((root / "civicaccess").glob("*.py")):
+    assert "v1.0.0" not in source.read_text(encoding="utf-8"), (
+        f"discredited v1.0.0 label in {source.as_posix()} (the false release; do not reintroduce)"
+    )
 print("PASS: version surfaces synchronized")
 PY
 
 echo "==> Test suite"
+if [[ -z "${CIVICACCESS_POSTGRES_TEST_URL:-}" ]]; then
+  echo "FAIL: CIVICACCESS_POSTGRES_TEST_URL is required for the release gate so PostgreSQL persistence coverage cannot be skipped." >&2
+  exit 1
+fi
+${PYTHON_BIN} - <<'PY'
+import os
+assert os.environ.get("CIVICACCESS_POSTGRES_TEST_URL"), (
+    "CIVICACCESS_POSTGRES_TEST_URL is not visible to the selected Python interpreter."
+)
+print("PASS: PostgreSQL test URL is visible to the selected Python interpreter")
+PY
 ${PYTHON_BIN} -m pytest -q
 
 echo "==> Documentation gate"
@@ -81,8 +96,8 @@ from pathlib import Path
 import hashlib
 
 dist = Path("dist")
-wheel = dist / "civicaccess-0.3.0-py3-none-any.whl"
-sdist = dist / "civicaccess-0.3.0.tar.gz"
+wheel = dist / "civicaccess-0.4.0-py3-none-any.whl"
+sdist = dist / "civicaccess-0.4.0.tar.gz"
 assert wheel.exists(), f"missing {wheel}"
 assert sdist.exists(), f"missing {sdist}"
 lines = []

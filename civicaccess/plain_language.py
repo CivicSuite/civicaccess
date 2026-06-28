@@ -1,4 +1,4 @@
-"""Plain-language rewrite helpers for CivicAccess v1.0.0."""
+"""Plain-language rewrite helpers for CivicAccess."""
 
 from __future__ import annotations
 

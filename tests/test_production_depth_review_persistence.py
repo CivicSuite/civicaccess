@@ -79,6 +79,7 @@ def test_api_persists_and_retrieves_review_records(monkeypatch, tmp_path) -> Non
         create_response = client.post(
             "/api/v1/civicaccess/review",
             json={"title": "", "body": "A public notice.", "has_alt_text": False, "language": "en"},
+            headers={"X-CivicAccess-Write-Token": "test-write-token"},
         )
         review_id = create_response.json()["review_id"]
         get_response = client.get(f"/api/v1/civicaccess/reviews/{review_id}")
@@ -180,10 +181,14 @@ def test_review_list_and_records_export_contract(monkeypatch, tmp_path) -> None:
                 "has_alt_text": True,
                 "language": "en",
             },
+            headers={"X-CivicAccess-Write-Token": "test-write-token"},
         )
         review_id = create_response.json()["review_id"]
         list_response = client.get("/api/v1/civicaccess/reviews")
-        export_response = client.post(f"/api/v1/civicaccess/reviews/{review_id}/records-export")
+        export_response = client.post(
+            f"/api/v1/civicaccess/reviews/{review_id}/records-export",
+            headers={"X-CivicAccess-Write-Token": "test-write-token"},
+        )
         contracts_response = client.get("/api/v1/civicaccess/integration-contracts")
     finally:
         main_module._dispose_review_repository()
