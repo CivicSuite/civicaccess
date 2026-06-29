@@ -1,27 +1,149 @@
 CivicAccess User Manual
 =======================
 
-CivicAccess helps cities make public information easier to read, reach, translate, review, and preserve. It supports accessibility review, accessible forms, public publishing workflows, plain-language rewrites, multilingual draft variants, ADA Title II review support, tagged-PDF expectations, and records-ready export checklists.
+Version 0.4.0 - early release.
+CivicAccess is the accessibility, plain-language, multilingual, and ADA Title II
+review-support module for CivicSuite.
 
-Current state: 0.4.0 standalone readiness candidate. CivicAccess includes deterministic checks, database-backed review records that default to the shared CivicCore PostgreSQL (with a SQLite dev fallback), readiness gates, a stateless public accessibility checker at /civicaccess, a staff review/export workspace at /civicaccess/staff, trusted-write-token-guarded persistence with persisted audit events, and CivicCore v1.2.0 release-wheel alignment. The previous v1.0.0 release was published in error and is superseded by this honest sub-1.0.0 label. It does not provide legal advice, certified ADA compliance, official translation certification, live LLM calls, or final publication approval.
+This manual has two parts. Read the one that fits your role. (For rendered
+architecture diagrams and full tables, see USER-MANUAL.md.)
 
-Runtime routes:
 
-- GET /
-- GET /health
-- GET /ready
-- GET /civicaccess
-- GET /api/v1/civicaccess/readiness
-- POST /api/v1/civicaccess/review
-- GET /api/v1/civicaccess/reviews/{review_id} when CIVICACCESS_REVIEW_DB_URL is configured
-- POST /api/v1/civicaccess/forms
-- POST /api/v1/civicaccess/publishing-workflow
-- POST /api/v1/civicaccess/plain-language
-- POST /api/v1/civicaccess/language-variant
-- POST /api/v1/civicaccess/ada-title-ii
-- POST /api/v1/civicaccess/tagged-pdf
-- POST /api/v1/civicaccess/export
+PART 1 - FOR CIVIC STAFF
+========================
 
-Set CIVICACCESS_REVIEW_DB_URL to persist review requests, findings, WCAG references, disclaimers, and next steps. Use civicaccess-db-status with the same database URL to initialize and verify schema. Leave persistence unset for deterministic sample behavior.
+What it is for
+--------------
+CivicAccess helps your office put out public notices, forms, and documents that
+everyone can read - and keep a clean record proving you checked. It is a staff
+tool that gives advice and does the busywork; you and your ADA coordinator always
+make the final call.
 
-Before public use, check /ready or /api/v1/civicaccess/readiness. The readiness gate is not-ready until local review persistence is configured and schema-ready.
+What you can do with it
+-----------------------
+- Know if a notice is hard to read: a check that flags missing titles, images
+  without descriptions, and dense wording - each with a specific fix.
+- Cut the jargon: a plain-language rewrite ("remit payment prior to the deadline"
+  -> "pay before the deadline").
+- Reach non-English readers: draft translations, clearly marked for a qualified
+  human reviewer to approve.
+- Publish an accessible form or PDF: a checklist of what it needs.
+- Handle an ADA Title II review: a step-by-step review-support checklist.
+- Answer a records request: a saved, exportable record of every review, with a
+  time-stamp of who did what.
+
+How you'll use it day to day
+----------------------------
+1. Open the public checker at /civicaccess. Paste in a draft and run the check.
+   You'll get plain-language fixes. Nothing is saved - a safe place to try things.
+2. To keep a review on the record, open the staff workspace at /civicaccess/staff,
+   paste in your staff write token (IT sets this up once), and save the review.
+3. Export a records-ready package for any saved review when a records request comes in.
+
+What CivicAccess will NOT do
+----------------------------
+It is a tool for your staff, not a rubber stamp. It does not give legal advice,
+certify ADA compliance, issue official translations, or publish anything on its own.
+A qualified human always reviews and approves before anything goes public.
+
+Where it stands today
+---------------------
+This is v0.4.0, an early release we're being upfront about: solid enough to evaluate
+and pilot, but not a finished 1.0 and not a compliance guarantee. (An earlier v1.0.0
+was published by mistake and pulled back to an honest sub-1.0 label.)
+
+
+PART 2 - FOR IT & TECHNICAL STAFF
+=================================
+
+Overview
+--------
+A deterministic FastAPI service (Python), pinned to the published CivicCore v1.2.0
+release wheel. Rule-based checks only - no model/LLM calls, no outbound network -
+so output is reproducible. Ships as one module inside CivicSuite Windows Local (a
+Tauri/WebView2 desktop app); also runs standalone for development.
+
+Architecture (text sketch; see USER-MANUAL.md for the rendered diagrams):
+
+  Resident  --> /civicaccess  (public, no token) --+
+                                                    +--> CivicAccess (FastAPI) --> PostgreSQL :15432
+  City staff --> /civicaccess/staff (write token) --+        |                     (civicaccess schema)
+                                                             +-- depends on ----> CivicCore v1.2.0
+                                                             +-- records-export -> CivicRecords AI
+
+  Runs inside the Tauri supervisor on the local machine. The supervisor injects
+  DATABASE_URL and backs up the whole Data/ directory (incl. the Postgres cluster).
+
+Request & trust model
+---------------------
+- Public (/civicaccess -> POST /api/v1/civicaccess/analyze): stateless. No token,
+  nothing persisted.
+- Staff (/civicaccess/staff -> POST .../review, POST .../reviews/{id}/records-export):
+  every write requires the trusted-write token.
+
+Persistence & configuration
+---------------------------
+Resolution order:
+  1. CIVICACCESS_REVIEW_DB_URL  - explicit override (dev SQLite or pre-built Postgres URL)
+  2. DATABASE_URL              - supervisor async URL, converted to sync psycopg2; the default
+  3. SQLite dev fallback       - data/civicaccess-reviews.db under CIVICACCESS_DATA_DIR
+CIVICACCESS_TRUSTED_WRITE_TOKEN is the required server secret for persistent writes.
+Use civicaccess-db-status to preflight a database with an explicit URL.
+
+Data model (civicaccess schema; migration id civicaccess-windows-local-state-v1):
+- accessibility_review_records (review_id, title, body, has_alt_text, language,
+  status, findings JSON, disclaimer, created_at)
+- audit_events (event_id, action, subject_id, actor, created_at)
+- schema_migrations (schema_version, applied_at)
+
+HTTP API (auth: "token" = X-CivicAccess-Write-Token required; otherwise open):
+  GET  /                                         -> status & boundaries
+  GET  /health                                   -> versions
+  GET  /ready, /api/v1/civicaccess/readiness     -> readiness gate
+  GET  /civicaccess, /civicaccess/staff          -> UIs (token never embedded)
+  POST /api/v1/civicaccess/analyze               -> stateless analysis
+  POST /api/v1/civicaccess/review                -> token; saves a review (+ audit)
+  GET  /api/v1/civicaccess/reviews[/{id}]        -> list / retrieve saved reviews
+  POST /api/v1/civicaccess/reviews/{id}/records-export -> token; export (+ audit)
+  GET  /api/v1/civicaccess/integration-contracts -> contracts
+  POST /api/v1/civicaccess/plain-language        -> plain-language rewrite
+  POST /api/v1/civicaccess/language-variant      -> multilingual draft (human-review flagged)
+  POST /api/v1/civicaccess/forms                 -> accessible form checks
+  POST /api/v1/civicaccess/publishing-workflow   -> publication workflow
+  POST /api/v1/civicaccess/ada-title-ii          -> ADA Title II checklist
+  POST /api/v1/civicaccess/tagged-pdf            -> tagged-PDF expectations
+  POST /api/v1/civicaccess/export                -> records-ready export checklist (stateless)
+
+Token-guarded writes: missing/invalid -> 403; guard not configured -> 503 (fails
+closed). Comparison is constant-time.
+
+Security
+--------
+- Authz boundary: persistence-write routes require the token; read/analyze are open.
+- Audit: every write/export writes an audit_events row; review.create is atomic with
+  the record.
+- Determinism: no model/LLM calls, no outbound network.
+- Backups: review + audit data live in the shared Postgres cluster, captured by the
+  supervisor's wholesale Data/ backup. Durability is covered by the test suite.
+
+Operations
+----------
+Readiness: poll GET /ready (or /api/v1/civicaccess/readiness) - ready when the schema
+can be created and verified. Local verification (the release gate requires a real
+PostgreSQL):
+  python -m pip install https://github.com/CivicSuite/civiccore/releases/download/v1.2.0/civiccore-1.2.0-py3-none-any.whl
+  python -m pip install -e ".[dev]"
+  export CIVICACCESS_POSTGRES_TEST_URL="postgresql+psycopg2://USER:PW@HOST:PORT/DB"
+  bash scripts/verify-release.sh
+
+Integration
+-----------
+CivicAccess depends on CivicCore (not vice versa). It publishes integration contracts,
+hands records exports to CivicRecords AI, and supports downstream publishers (zone,
+plan, permit, inspect, grants, procure).
+
+Release status
+--------------
+v0.4.0 is an early release; probe gaps #1-#4 are closed with evidence (PROBE-PROGRESS.md).
+City-core membership and a clean-VM accessibility acceptance pass are later phases. The
+earlier v1.0.0 tag was published in error and is retained only as historical evidence.
